@@ -2254,8 +2254,12 @@ func (au *accountUpdates) commitRound(offset uint64, dbRound basics.Round, lookb
 
 	if updateStats {
 		stats.MemoryUpdatesDuration = time.Duration(time.Now().UnixNano())
+		stats.MuLockDuration = stats.MemoryUpdatesDuration
 	}
 	au.accountsMu.Lock()
+	if updateStats {
+		stats.MuLockDuration = time.Duration(time.Now().UnixNano()) - stats.MuLockDuration
+	}
 	// Drop reference counts to modified accounts, and evict them
 	// from in-memory cache when no references remain.
 	for i := 0; i < compactDeltas.len(); i++ {
@@ -2276,10 +2280,16 @@ func (au *accountUpdates) commitRound(offset uint64, dbRound basics.Round, lookb
 		}
 	}
 
+	if updateStats {
+		stats.PersistedAcctWriteDuration = time.Duration(time.Now().UnixNano())
+	}
 	for _, persistedAcct := range updatedPersistedAccounts {
 		au.baseAccounts.write(persistedAcct)
 	}
 
+	if updateStats {
+		stats.PersistedAcctWriteDuration = time.Duration(time.Now().UnixNano()) - stats.PersistedAcctWriteDuration
+	}
 	for cidx, modCrt := range compactCreatableDeltas {
 		cnt := modCrt.Ndeltas
 		mcreat, ok := au.creatables[cidx]

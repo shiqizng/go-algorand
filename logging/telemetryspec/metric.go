@@ -146,15 +146,17 @@ const accountsUpdateMetricsIdentifier Metric = "AccountsUpdate"
 
 // AccountsUpdateMetrics is the set of metrics captured when we process accountUpdates.commitRound
 type AccountsUpdateMetrics struct {
-	StartRound                uint64
-	RoundsCount               uint64
-	OldAccountPreloadDuration time.Duration
-	MerkleTrieUpdateDuration  time.Duration
-	AccountsWritingDuration   time.Duration
-	DatabaseCommitDuration    time.Duration
-	MemoryUpdatesDuration     time.Duration
-	UpdatedAccountsCount      uint64
-	UpdatedCreatablesCount    uint64
+	StartRound                 uint64
+	RoundsCount                uint64
+	OldAccountPreloadDuration  time.Duration
+	MerkleTrieUpdateDuration   time.Duration
+	AccountsWritingDuration    time.Duration
+	DatabaseCommitDuration     time.Duration
+	MemoryUpdatesDuration      time.Duration
+	UpdatedAccountsCount       uint64
+	UpdatedCreatablesCount     uint64
+	PersistedAcctWriteDuration time.Duration
+	MuLockDuration             time.Duration
 }
 
 // Identifier implements the required MetricDetails interface, retrieving the Identifier for this set of metrics.
