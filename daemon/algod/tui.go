@@ -1,3 +1,19 @@
+// Copyright (C) 2019-2022 Algorand, Inc.
+// This file is part of go-algorand
+//
+// go-algorand is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// go-algorand is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with go-algorand.  If not, see <https://www.gnu.org/licenses/>.
+
 // Package tui contains a terminal UI started within the context of algod.
 // Other components may need to be added to other packages to gain access to
 // private data.
@@ -5,13 +21,14 @@ package algod
 
 import (
 	"fmt"
-	"github.com/algorand/go-algorand/daemon/algod/tui"
-	"github.com/algorand/go-algorand/node"
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
 	"os"
 	"strings"
 
+	"github.com/algorand/go-algorand/daemon/algod/tui"
+	"github.com/algorand/go-algorand/node"
+
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/indent"
 )
