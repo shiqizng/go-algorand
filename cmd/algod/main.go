@@ -56,6 +56,12 @@ var sessionGUID = flag.String("s", "", "Telemetry Session GUID to use")
 var telemetryOverride = flag.String("t", "", `Override telemetry setting if supported (Use "true", "false", "0" or "1"`)
 var seed = flag.String("seed", "", "input to math/rand.Seed()")
 
+var ui bool
+
+func init() {
+	flag.BoolVar(&ui, "u", false, "When set the node will launch with a terminal user interface.")
+}
+
 func main() {
 	flag.Parse()
 	exitCode := run()
@@ -362,6 +368,11 @@ func run() int {
 		}()
 	}
 
+	if ui {
+		fmt.Println("Starting UI in 1 second.")
+		time.Sleep(time.Second)
+		go algod.Start(&s)
+	}
 	s.Start()
 	return 0
 }

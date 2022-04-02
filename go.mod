@@ -12,6 +12,9 @@ require (
 	github.com/algorand/oapi-codegen v1.3.7
 	github.com/algorand/websocket v1.4.5
 	github.com/aws/aws-sdk-go v1.16.5
+	github.com/charmbracelet/bubbles v0.10.3 // indirect
+	github.com/charmbracelet/bubbletea v0.20.0
+	github.com/charmbracelet/lipgloss v0.5.0 // indirect
 	github.com/chrismcguire/gobberish v0.0.0-20150821175641-1d8adb509a0e
 	github.com/cpuguy83/go-md2man v1.0.8 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20170701192655-dcfb0a7ac018
@@ -34,6 +37,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0
 	github.com/miekg/dns v1.1.27
+	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/olivere/elastic v6.2.14+incompatible
