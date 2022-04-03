@@ -33,6 +33,7 @@ import (
 	"github.com/algorand/go-algorand/config"
 	"github.com/algorand/go-algorand/crypto"
 	"github.com/algorand/go-algorand/daemon/algod"
+	"github.com/algorand/go-algorand/daemon/algod/tui"
 	"github.com/algorand/go-algorand/data/bookkeeping"
 	"github.com/algorand/go-algorand/logging"
 	"github.com/algorand/go-algorand/logging/telemetryspec"
@@ -371,7 +372,7 @@ func run() int {
 	if ui {
 		fmt.Println("Starting UI in 1 second.")
 		time.Sleep(time.Second)
-		go algod.Start(&s)
+		go tui.Start(&s)
 	}
 	s.Start()
 	return 0
