@@ -43,7 +43,7 @@ import (
 )
 
 const host = "localhost"
-const port = 1234
+const port = 1324
 
 type model struct {
 	server  *algod.Server
@@ -151,9 +151,13 @@ var aServer *algod.Server
 func Start(s *algod.Server) {
 
 	aServer = s
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
 	sshServer, err := wish.NewServer(
 		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
-		wish.WithHostKeyPath(".ssh/term_info_ed25519"),
+		wish.WithHostKeyPath(dirname+"/.ssh/term_info_ed25519"),
 		wish.WithMiddleware(
 			bm.Middleware(teaHandler),
 			lm.Middleware(),
@@ -179,4 +183,11 @@ func Start(s *algod.Server) {
 	if err := sshServer.Shutdown(ctx); err != nil {
 		log.Fatalln(err)
 	}
+	//p := tea.NewProgram(makeModel(s), tea.WithAltScreen())
+	//if err := p.Start(); err != nil {
+	//	fmt.Printf("Error in UI: %v", err)
+	//	os.Exit(1)
+	//}
+	//fmt.Printf("\nUI Terminated, shutting down node.\n")
+	//os.Exit(0)
 }
