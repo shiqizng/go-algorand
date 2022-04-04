@@ -89,6 +89,12 @@ func (m Model) View() string {
 		report.WriteString(fmt.Sprintf("Next consensus protocol: %s\n", formatVersion(string(m.Status.NextVersion))))
 		report.WriteString(fmt.Sprintf("Next upgrade round:      %s\n", nextVersion))
 		report.WriteString(fmt.Sprintf("Next protocol supported: %t\n", m.Status.NextVersionSupported))
+		report.WriteString(fmt.Sprintf("catch point total blocks: %d\n", m.Status.CatchpointCatchupTotalBlocks))
+		report.WriteString(fmt.Sprintf("catchpoint: %s\n", m.Status.Catchpoint))
+		report.WriteString(fmt.Sprintf("catchpoint processed accounts: %d\n", m.Status.CatchpointCatchupProcessedAccounts))
+		report.WriteString(fmt.Sprintf("catchpoint acquired block: %d\n", m.Status.CatchpointCatchupAcquiredBlocks))
+		report.WriteString(fmt.Sprintf("catchup verified accounts: %d\n", m.Status.CatchpointCatchupVerifiedAccounts))
+		report.WriteString(fmt.Sprintf("catchup total accounts: %d\n", m.Status.CatchpointCatchupTotalAccounts))
 		builder.WriteString(indent.String(report.String(), 4))
 	}
 
