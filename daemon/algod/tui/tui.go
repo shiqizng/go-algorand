@@ -142,15 +142,15 @@ func (m model) View() string {
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
-	return makeModel(aServer), []tea.ProgramOption{tea.WithAltScreen()}
+	return makeModel(algodServer), []tea.ProgramOption{tea.WithAltScreen()}
 }
 
-var aServer *algod.Server
+var algodServer *algod.Server
 
 // Start ...
 func Start(s *algod.Server) {
 
-	aServer = s
+	algodServer = s
 	dirname, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)
@@ -183,11 +183,4 @@ func Start(s *algod.Server) {
 	if err := sshServer.Shutdown(ctx); err != nil {
 		log.Fatalln(err)
 	}
-	//p := tea.NewProgram(makeModel(s), tea.WithAltScreen())
-	//if err := p.Start(); err != nil {
-	//	fmt.Printf("Error in UI: %v", err)
-	//	os.Exit(1)
-	//}
-	//fmt.Printf("\nUI Terminated, shutting down node.\n")
-	//os.Exit(0)
 }
