@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -157,7 +158,7 @@ func Start(s *algod.Server) {
 	}
 	sshServer, err := wish.NewServer(
 		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
-		wish.WithHostKeyPath(dirname+"/.ssh/term_info_ed25519"),
+		wish.WithHostKeyPath(path.Join(dirname, ".ssh/term_info_ed25519")),
 		wish.WithMiddleware(
 			bm.Middleware(teaHandler),
 			lm.Middleware(),
