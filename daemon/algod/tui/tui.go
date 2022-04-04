@@ -20,10 +20,14 @@
 package tui
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/algorand/go-algorand/daemon/algod"
@@ -31,8 +35,15 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/wish"
+	bm "github.com/charmbracelet/wish/bubbletea"
+	lm "github.com/charmbracelet/wish/logging"
+	"github.com/gliderlabs/ssh"
 	"github.com/muesli/reflow/indent"
 )
+
+const host = "localhost"
+const port = 1234
 
 type model struct {
 	server  *algod.Server
@@ -129,12 +140,43 @@ func (m model) View() string {
 	return builder.String()
 }
 
+func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+
+	return makeModel(aServer), []tea.ProgramOption{tea.WithAltScreen()}
+}
+
+var aServer *algod.Server
+
+// Start ...
 func Start(s *algod.Server) {
-	p := tea.NewProgram(makeModel(s), tea.WithAltScreen())
-	if err := p.Start(); err != nil {
-		fmt.Printf("Error in UI: %v", err)
-		os.Exit(1)
+
+	aServer = s
+	sshServer, err := wish.NewServer(
+		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
+		wish.WithHostKeyPath(".ssh/term_info_ed25519"),
+		wish.WithMiddleware(
+			bm.Middleware(teaHandler),
+			lm.Middleware(),
+		),
+	)
+	if err != nil {
+		log.Fatalln(err)
 	}
-	fmt.Printf("\nUI Terminated, shutting down node.\n")
-	os.Exit(0)
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	log.Printf("Starting SSH server on %s:%d", host, port)
+	go func() {
+		if err = sshServer.ListenAndServe(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	<-done
+	log.Println("Stopping SSH server")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() { cancel() }()
+	if err := sshServer.Shutdown(ctx); err != nil {
+		log.Fatalln(err)
+	}
 }
