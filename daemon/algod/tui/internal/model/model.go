@@ -21,8 +21,10 @@ type Model struct {
 
 func New(s *algod.Server) Model {
 	return Model{
-		Server: s,
-		Status: status.NewModel(s),
-		Help:   help.New(),
+		Server:        s,
+		Status:        status.NewModel(s),
+		BlockExplorer: explorer.NewModel(s),
+		Accounts:      accounts.NewModel(s),
+		Help:          help.New(),
 	}
 }
