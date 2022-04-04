@@ -1,9 +1,9 @@
-package accounts
+package explorer
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-
 	"github.com/algorand/go-algorand/daemon/algod"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type Model struct {
@@ -22,5 +22,5 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	return "account stub"
+	return "this\nis\nwhere\nthe\nblock\nexplorer\ngoes"
 }

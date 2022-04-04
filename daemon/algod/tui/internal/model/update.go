@@ -22,5 +22,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var accountsCommand tea.Cmd
 	m.Accounts, accountsCommand = m.Accounts.Update(msg)
 
-	return m, tea.Batch(statusCommand, accountsCommand)
+	var explorerCommand tea.Cmd
+	m.BlockExplorer, explorerCommand = m.BlockExplorer.Update(msg)
+
+	return m, tea.Batch(statusCommand, accountsCommand, explorerCommand)
 }

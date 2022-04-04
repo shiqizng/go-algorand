@@ -5,13 +5,15 @@ import (
 
 	"github.com/algorand/go-algorand/daemon/algod"
 	"github.com/algorand/go-algorand/daemon/algod/tui/internal/bubbles/accounts"
+	"github.com/algorand/go-algorand/daemon/algod/tui/internal/bubbles/explorer"
 	"github.com/algorand/go-algorand/daemon/algod/tui/internal/bubbles/status"
 )
 
 type Model struct {
-	Server   *algod.Server
-	Status   status.Model
-	Accounts accounts.Model
+	Server        *algod.Server
+	Status        status.Model
+	Accounts      accounts.Model
+	BlockExplorer explorer.Model
 
 	Err  error
 	Help help.Model
