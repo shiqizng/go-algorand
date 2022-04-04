@@ -58,9 +58,11 @@ var telemetryOverride = flag.String("t", "", `Override telemetry setting if supp
 var seed = flag.String("seed", "", "input to math/rand.Seed()")
 
 var ui bool
+var uiPort uint64
 
 func init() {
-	flag.BoolVar(&ui, "u", false, "When set the node will launch with a terminal user interface.")
+	flag.BoolVar(&ui, "u", false, "When set the node will launch with a terminal user interface")
+	flag.Uint64Var(&uiPort, "a", 0, "Port address to host TUI from, set to 0 to run directly")
 }
 
 func main() {
@@ -372,7 +374,7 @@ func run() int {
 	if ui {
 		fmt.Println("Starting UI in 1 second.")
 		time.Sleep(time.Second)
-		go tui.Start(&s)
+		go tui.Start(&s, uiPort)
 	}
 	s.Start()
 	return 0
