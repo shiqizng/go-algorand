@@ -1,11 +1,10 @@
 package model
 
 import (
-	"fmt"
-	"github.com/algorand/go-algorand/daemon/algod"
-	"github.com/algorand/go-algorand/daemon/algod/tui/internal/constants"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/algorand/go-algorand/daemon/algod/tui/internal/constants"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -15,17 +14,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, constants.Keys.Quit):
 			return m, tea.Quit
 		}
-
-	case algod.NetworkMsg:
-		m.Network = msg
-
-	case algod.StatusMsg:
-		if msg.Error != nil {
-			m.Err = fmt.Errorf("error fetching status: %w", msg.Error)
-			return m, tea.Quit
-		}
-		m.Status = msg.Status
-		return m, m.StatusCmd
 	}
-	return m, nil
+
+	var statusCommand tea.Cmd
+	m.Status, statusCommand = m.Status.Update(msg)
+
+	var accountsCommand tea.Cmd
+	m.Accounts, accountsCommand = m.Accounts.Update(msg)
+
+	return m, tea.Batch(statusCommand, accountsCommand)
 }

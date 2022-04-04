@@ -17,8 +17,6 @@
 package algod
 
 import (
-	"time"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/algorand/go-algorand/crypto"
@@ -46,8 +44,6 @@ type StatusMsg struct {
 
 func GetStatusCmd(s *Server) tea.Cmd {
 	return func() tea.Msg {
-		t := time.NewTimer(100 * time.Millisecond)
-		<-t.C
 		s, err := s.node.Status()
 		return StatusMsg{
 			Status: s,
