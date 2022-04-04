@@ -10,18 +10,14 @@ import (
 )
 
 type Model struct {
-	Server        *algod.Server
 	Status        status.Model
 	Accounts      accounts.Model
 	BlockExplorer explorer.Model
-
-	Err  error
-	Help help.Model
+	Help          help.Model
 }
 
 func New(s *algod.Server) Model {
 	return Model{
-		Server:        s,
 		Status:        status.NewModel(s),
 		BlockExplorer: explorer.NewModel(s),
 		Accounts:      accounts.NewModel(s),
