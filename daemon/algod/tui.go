@@ -101,3 +101,7 @@ func StartFastCatchup(s *Server) tea.Cmd {
 		}
 	}
 }
+
+func GetNode(s *Server) *node.AlgorandFullNode {
+	return s.node
+}
