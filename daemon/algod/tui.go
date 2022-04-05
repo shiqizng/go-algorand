@@ -59,11 +59,6 @@ func GetStatusCmd(s *Server) tea.Cmd {
 	}
 }
 
-type CatchupMsg struct {
-	Status node.StatusReport
-	Error  error
-}
-
 func StartFastCatchup(s *Server) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := http.Get("https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/testnet/latest.catchpoint")
@@ -100,7 +95,7 @@ func StartFastCatchup(s *Server) tea.Cmd {
 		body, _ = ioutil.ReadAll(resp.Body)
 
 		s, err := s.node.Status()
-		return CatchupMsg{
+		return StatusMsg{
 			Status: s,
 			Error:  err,
 		}
