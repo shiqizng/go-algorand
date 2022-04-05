@@ -22,9 +22,11 @@ type Model struct {
 	Network algod.NetworkMsg
 	Err     error
 
-	server   *algod.Server
-	progress progress.Model
-	percent  float64
+	server            *algod.Server
+	progress          progress.Model
+	processedAcctsPct float64
+	verifiedAcctsPct  float64
+	acquiredBlksPct   float64
 }
 
 func NewModel(server *algod.Server) Model {
@@ -50,7 +52,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 		m.Status = msg.Status
 		if m.Status.CatchpointCatchupTotalAccounts > 0 {
-			m.percent = float64(m.Status.CatchpointCatchupProcessedAccounts) / float64(m.Status.CatchpointCatchupTotalAccounts)
+			m.processedAcctsPct = float64(m.Status.CatchpointCatchupProcessedAccounts) / float64(m.Status.CatchpointCatchupTotalAccounts)
+			m.verifiedAcctsPct = float64(m.Status.CatchpointCatchupVerifiedAccounts) / float64(m.Status.CatchpointCatchupTotalAccounts)
+		}
+		if m.Status.CatchpointCatchupTotalBlocks > 0 {
+			m.acquiredBlksPct = float64(m.Status.CatchpointCatchupAcquiredBlocks) / float64(m.Status.CatchpointCatchupTotalBlocks)
 		}
 		return m, tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg {
 			return algod.GetStatusCmd(m.server)()
@@ -108,13 +114,12 @@ func (m Model) View() string {
 
 		if m.Status.Catchpoint != "" {
 			report.WriteString(fmt.Sprintf("Catchpoint: %s\n", m.Status.Catchpoint))
-			report.WriteString(fmt.Sprintf("Catchpoint total blocks: %d\n", m.Status.CatchpointCatchupTotalBlocks))
-			report.WriteString(fmt.Sprintf("Catchpoint processed accounts: %d\n", m.Status.CatchpointCatchupProcessedAccounts))
-			report.WriteString(fmt.Sprintf("Catchpoint acquired block: %d\n", m.Status.CatchpointCatchupAcquiredBlocks))
-			report.WriteString(fmt.Sprintf("Catchup verified accounts: %d\n", m.Status.CatchpointCatchupVerifiedAccounts))
-			report.WriteString(fmt.Sprintf("Catchup total accounts: %d\n", m.Status.CatchpointCatchupTotalAccounts))
 			report.WriteString("Catchpoint processed accounts: ")
-			report.WriteString(m.progress.ViewAs(m.percent))
+			report.WriteString(m.progress.ViewAs(m.processedAcctsPct))
+			report.WriteString("\nCatchpoint verified accounts: ")
+			report.WriteString(m.progress.ViewAs(m.verifiedAcctsPct))
+			report.WriteString("\nCatchpoint acquired block: ")
+			report.WriteString(m.progress.ViewAs(m.acquiredBlksPct))
 		}
 
 		builder.WriteString(indent.String(report.String(), 4))
