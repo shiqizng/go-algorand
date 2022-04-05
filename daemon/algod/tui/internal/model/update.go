@@ -16,6 +16,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case key.Matches(msg, constants.Keys.Catchup):
 			return m, algod.StartFastCatchup(m.Server)
+		case key.Matches(msg, constants.Keys.AbortCatchup):
+			return m, algod.StopFastCatchup(m.Server)
 		}
 
 	case tea.WindowSizeMsg:

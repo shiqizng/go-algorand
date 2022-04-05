@@ -13,7 +13,7 @@ import (
 
 const (
 	// MaxTopBoxHeight is the height of the top boxes. Hard coded to avoid dynamic margins.
-	MaxTopBoxHeight = 18
+	MaxTopBoxHeight = 20
 	initialWidth    = 80
 	initialHeight   = 50
 )

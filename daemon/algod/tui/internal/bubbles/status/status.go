@@ -15,7 +15,7 @@ import (
 	"github.com/algorand/go-algorand/node"
 )
 
-var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
+var bold = lipgloss.NewStyle().Bold(true)
 
 type Model struct {
 	Status  node.StatusReport
@@ -93,8 +93,8 @@ func (m Model) View() string {
 	builder := strings.Builder{}
 
 	// general information
-	builder.WriteString(fmt.Sprintf("Network      - %s\n", m.Network.GenesisID))
-	builder.WriteString(fmt.Sprintf("Genesis Hash - %s\n", m.Network.GenesisHash.String()))
+	builder.WriteString(fmt.Sprintf("%s      - %s\n", bold.Render("Network"), m.Network.GenesisID))
+	builder.WriteString(fmt.Sprintf("%s - %s\n", bold.Render("Genesis Hash"), m.Network.GenesisHash.String()))
 
 	// status
 	if (m.Status != node.StatusReport{}) {
@@ -103,7 +103,7 @@ func (m Model) View() string {
 			string(m.Status.NextVersion),
 			uint64(m.Status.NextVersionRound))
 		report := strings.Builder{}
-		report.WriteString(fmt.Sprintf("Status Report\n-------------                                     \n"))
+		report.WriteString(fmt.Sprintf("%s\n-------------                                     \n", bold.Render("Status Report")))
 		report.WriteString(fmt.Sprintf("Last committed block:    %d\n", m.Status.LastRound))
 		report.WriteString(fmt.Sprintf("Time since last block:   %s\n", m.Status.TimeSinceLastRound()))
 		report.WriteString(fmt.Sprintf("Sync time:               %s\n", m.Status.SynchronizingTime))
