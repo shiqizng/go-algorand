@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/algorand/go-algorand/daemon/algod/tui/internal/bubbles/configs"
 	"github.com/charmbracelet/bubbles/help"
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -23,6 +24,7 @@ type Model struct {
 	Status        status.Model
 	Accounts      accounts.Model
 	BlockExplorer explorer.Model
+	Configs       configs.Model
 	Help          help.Model
 
 	styles *style.Styles
@@ -39,6 +41,7 @@ func New(s *algod.Server) Model {
 		Status:        status.NewModel(s),
 		BlockExplorer: explorer.NewModel(s, styles, initialWidth, 0, initialHeight, MaxTopBoxHeight /* Max(status.height, account.height) */),
 		Accounts:      accounts.NewModel(s),
+		Configs:       configs.NewModel(),
 		Help:          help.New(),
 	}
 }
