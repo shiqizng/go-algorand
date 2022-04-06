@@ -7,8 +7,20 @@ import (
 // XXX: For now, this is in its own package so that it can be shared between
 // different packages without incurring an illegal import cycle.
 
+const (
+	TopHeight = 13
+)
+
 // Styles defines styles for the TUI.
 type Styles struct {
+	ActiveBorderColor   lipgloss.Color
+	InactiveBorderColor lipgloss.Color
+
+	// Status area
+	Status         lipgloss.Style
+	StatusBoldText lipgloss.Style
+
+	// Bottom area
 	Bottom          lipgloss.Style
 	BottomPaginator lipgloss.Style
 
@@ -18,8 +30,11 @@ type Styles struct {
 	BottomListItemInactive lipgloss.Style
 	BottomListItemKey      lipgloss.Style
 
-	ActiveBorderColor   lipgloss.Color
-	InactiveBorderColor lipgloss.Color
+	// Footer
+	Footer       lipgloss.Style
+	FooterLeft   lipgloss.Style
+	FooterMiddle lipgloss.Style
+	FooterRight  lipgloss.Style
 
 	/*
 		App    lipgloss.Style
@@ -92,17 +107,27 @@ func DefaultStyles() *Styles {
 
 	// used
 	s.ActiveBorderColor = lipgloss.Color("62")
-	s.InactiveBorderColor = lipgloss.Color("236")
+	//s.InactiveBorderColor = lipgloss.Color("236")
+	s.InactiveBorderColor = lipgloss.Color("#ABB8C3")
 	s.BottomPaginator = lipgloss.NewStyle().
 		Margin(0).
 		Align(lipgloss.Center)
+
+	// Status
+	s.Status = lipgloss.NewStyle().
+		Height(TopHeight-2).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(s.InactiveBorderColor).
+		Padding(0, 1, 0, 1).
+		MarginLeft(1)
+	s.StatusBoldText = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0693E3"))
 
 	// Bottom box
 	s.Bottom = lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(s.InactiveBorderColor).
-		Padding(1, 1, 1, 1).
-		MarginRight(1)
+		Padding(1, 2, 1, 1).
+		MarginLeft(1)
 
 	s.BottomListItemInactive = lipgloss.NewStyle().
 		MarginLeft(1)
@@ -123,6 +148,25 @@ func DefaultStyles() *Styles {
 	s.BottomListItemKey = s.BottomListItemInactive.Copy().
 		Width(10).
 		Foreground(lipgloss.Color("#A3A322"))
+
+	// Inspired by lipgloss demo
+	s.Footer = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#343433", Dark: "#C1C6B2"}).
+		Background(lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#353533"})
+
+	s.FooterLeft = lipgloss.NewStyle().
+		Inherit(s.Footer).
+		Foreground(lipgloss.Color("#FFFDF5")).
+		Background(lipgloss.Color("#4CAF50")).
+		Padding(0, 1).
+		MarginRight(1)
+	s.FooterMiddle = lipgloss.NewStyle().
+		Inherit(s.Footer)
+
+	s.FooterRight = lipgloss.NewStyle().Inherit(s.Footer).
+		Background(lipgloss.Color("#A550DF")).
+		Padding(0, 1).
+		Align(lipgloss.Right)
 
 	/*
 		s.App = lipgloss.NewStyle().
