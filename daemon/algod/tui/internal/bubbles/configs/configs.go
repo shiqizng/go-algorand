@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/algorand/go-algorand/daemon/algod"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/algorand/go-algorand/daemon/algod"
+	"github.com/algorand/go-algorand/node"
 )
 
 const useHighPerformanceRenderer = false
@@ -27,19 +29,39 @@ var (
 )
 
 type Model struct {
-	content  string
-	ready    bool
-	viewport viewport.Model
+	heightMargin int
+	viewport     viewport.Model
+	server       *algod.Server
 }
 
-func NewModel() Model {
-	return Model{
-		content:  algod.GetConfigs(),
-		viewport: viewport.New(60, 20),
+func New(s *algod.Server, heightMargin int) Model {
+	m := Model{
+		viewport:     viewport.New(0, 0),
+		heightMargin: heightMargin,
+		server:       s,
+	}
+	m.setSize(80, 20)
+	return m
+}
+
+type ConfigContent string
+
+func (m Model) getContent() tea.Cmd {
+	return func() tea.Msg {
+		return ConfigContent(node.GetConfigs(algod.GetNode(m.server)))
 	}
 }
+
 func (m Model) Init() tea.Cmd {
-	return nil
+	return m.getContent()
+}
+
+func (m *Model) setSize(width, height int) {
+	headerHeight := lipgloss.Height(m.headerView())
+	footerHeight := lipgloss.Height(m.footerView())
+
+	m.viewport.Width = width
+	m.viewport.Height = height - m.heightMargin - headerHeight - footerHeight
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
@@ -47,23 +69,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-	//
-	switch msg.(type) {
+
+	switch msg := msg.(type) {
+	case ConfigContent:
+		// For some reason tabs make the viewport go crazy
+		//m.viewport.SetContent(string(msg))
+		m.viewport.SetContent(strings.ReplaceAll(string(msg), "\t", "    "))
 
 	case tea.WindowSizeMsg:
-		headerHeight := lipgloss.Height(m.headerView())
-		if !m.ready {
-			m.viewport.HighPerformanceRendering = useHighPerformanceRenderer
-			m.viewport.SetContent(m.content)
-			m.ready = true
-
-			m.viewport.YPosition = headerHeight + 1
-
-		} else {
-			m.viewport.Width = 60
-			m.viewport.Height = 20
-		}
-
+		m.setSize(msg.Width, msg.Height)
 	}
 
 	// Handle keyboard and mouse events in the viewport

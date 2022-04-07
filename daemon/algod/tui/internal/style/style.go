@@ -9,12 +9,16 @@ import (
 
 const (
 	TopHeight = 13
+	TabHeight = 1
 )
 
 // Styles defines styles for the TUI.
 type Styles struct {
 	ActiveBorderColor   lipgloss.Color
 	InactiveBorderColor lipgloss.Color
+
+	// Accounts area
+	Account lipgloss.Style
 
 	// Status area
 	Status         lipgloss.Style
@@ -113,9 +117,17 @@ func DefaultStyles() *Styles {
 		Margin(0).
 		Align(lipgloss.Center)
 
+	// Accounts
+	s.Account = lipgloss.NewStyle().
+		Height(15).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(s.InactiveBorderColor).
+		Padding(0, 1, 0, 1).
+		MarginLeft(1)
+
 	// Status
 	s.Status = lipgloss.NewStyle().
-		Height(TopHeight-2).
+		Width(64).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(s.InactiveBorderColor).
 		Padding(0, 1, 0, 1).
