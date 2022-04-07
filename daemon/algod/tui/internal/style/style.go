@@ -9,6 +9,7 @@ import (
 
 const (
 	TopHeight = 13
+	TabHeight = 1
 )
 
 // Styles defines styles for the TUI.
@@ -115,7 +116,7 @@ func DefaultStyles() *Styles {
 
 	// Status
 	s.Status = lipgloss.NewStyle().
-		Height(TopHeight-2).
+		Width(64).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(s.InactiveBorderColor).
 		Padding(0, 1, 0, 1).

@@ -60,7 +60,7 @@ func NewModel(server *algod.Server, styles *style.Styles, width, widthMargin, he
 		width:        width,
 		widthMargin:  widthMargin,
 		height:       height,
-		heightMargin: heightMargin + 6,
+		heightMargin: heightMargin,
 	}
 	m.initBlocks()
 	return m
@@ -102,7 +102,8 @@ func (m Model) Init() tea.Cmd {
 func (m *Model) SetSize(width, height int) {
 	m.width = width
 	m.height = height
-	m.table.SetSize(width-m.widthMargin, height-m.heightMargin)
+	verticalFrameSize := m.style.Bottom.GetVerticalFrameSize()
+	m.table.SetSize(width-m.widthMargin, height-m.heightMargin-verticalFrameSize)
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {

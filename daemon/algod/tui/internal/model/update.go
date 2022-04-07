@@ -15,9 +15,15 @@ func networkFromID(genesisID string) string {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
 	switch msg := msg.(type) {
 	case algod.NetworkMsg:
 		m.network = msg
+
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, constants.Keys.Quit):
@@ -26,23 +32,45 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, algod.StartFastCatchup(m.Server, networkFromID(m.Status.Network.GenesisID))
 		case key.Matches(msg, constants.Keys.AbortCatchup):
 			return m, algod.StopFastCatchup(m.Server, networkFromID(m.Status.Network.GenesisID))
+		case key.Matches(msg, constants.Keys.Section):
+			m.active += 1
+			m.active %= 3
+			m.Tabs.SetActiveIndex(int(m.active))
+			return m, nil
+		}
+		switch m.active {
+		case explorerTab:
+			var explorerCommand tea.Cmd
+			m.BlockExplorer, explorerCommand = m.BlockExplorer.Update(msg)
+			return m, explorerCommand
+		case configTab:
+		case helpTab:
 		}
 
 	case tea.WindowSizeMsg:
 		m.lastResize = msg
 	}
 
-	var statusCommand tea.Cmd
-	m.Status, statusCommand = m.Status.Update(msg)
+	m.Status, cmd = m.Status.Update(msg)
+	cmds = append(cmds, cmd)
 
-	var accountsCommand tea.Cmd
-	m.Accounts, accountsCommand = m.Accounts.Update(msg)
+	m.Accounts, cmd = m.Accounts.Update(msg)
+	cmds = append(cmds, cmd)
 
-	var explorerCommand tea.Cmd
-	m.BlockExplorer, explorerCommand = m.BlockExplorer.Update(msg)
+	m.BlockExplorer, cmd = m.BlockExplorer.Update(msg)
+	cmds = append(cmds, cmd)
 
-	var footerCommand tea.Cmd
-	m.Footer, footerCommand = m.Footer.Update(msg)
+	m.Configs, cmd = m.Configs.Update(msg)
+	cmds = append(cmds, cmd)
 
-	return m, tea.Batch(statusCommand, accountsCommand, explorerCommand, footerCommand)
+	m.Footer, cmd = m.Footer.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.Tabs, cmd = m.Tabs.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.About, cmd = m.About.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
