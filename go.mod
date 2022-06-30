@@ -18,7 +18,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/gen2brain/beeep v0.0.0-20180718162406-4e430518395f
 	github.com/getkin/kin-openapi v0.22.0
-	github.com/go-python/gpython v0.1.0 // indirect
+	github.com/go-python/gpython v0.1.0
 	github.com/gofrs/flock v0.7.0
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/mux v1.6.2

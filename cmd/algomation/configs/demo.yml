@@ -1,0 +1,10 @@
+contract:
+    name: contract1
+    description: my first contract
+    local_int: 1
+    local_byte: 1
+    global_int: 1
+    global_byte: 1
+    approval_program: "#pragma version %d\nint 1\nreturn"
+    clear_state_program: "#pragma version %d\nint 1\nreturn"
+    extra_program_pages: 1

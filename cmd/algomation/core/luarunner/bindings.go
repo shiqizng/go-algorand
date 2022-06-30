@@ -2,8 +2,16 @@ package luarunner
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"strconv"
 
+	"github.com/algorand/go-algorand/crypto"
+	"github.com/algorand/go-algorand/data/basics"
+	"github.com/algorand/go-algorand/data/transactions"
+	"github.com/algorand/go-algorand/data/transactions/logic"
 	lua "github.com/yuin/gopher-lua"
+	"gopkg.in/yaml.v2"
 
 	"github.com/algorand/go-algorand/nodecontrol"
 )
@@ -83,6 +91,7 @@ func makeNodeControllerLoader(bindir, datadir string) lua.LGFunction {
 }
 
 const luaNodeControllerName = "node-controller"
+const luaAlgoTestName = "AlgotTest"
 
 func checkNodeController(L *lua.LState) *nodecontrol.NodeController {
 	ud := L.CheckUserData(1)
@@ -144,4 +153,144 @@ func registerNodeControllerType(L *lua.LState) {
 	L.SetGlobal("algod", mt)
 	L.SetField(mt, "new", L.NewFunction(newAlgod))
 	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), methods))
+}
+
+// AlgoTestLoader defines test methods
+// Example lua:
+// 	   local t = require("algotest")
+//     local addr = t.makeAccount()
+// 	   print(addr)
+func AlgoTestLoader(L *lua.LState) int {
+	var exports = map[string]lua.LGFunction{
+		"makeAccount":         makeAccount,
+		"createAppFromConfig": createAppFromConfig,
+		"createAsa":           createAsa,
+		"setAccountState":     setAccountState,
+		"startPrivateNetwork": startPrivateNetwork,
+	}
+	// register functions to the table
+	mod := L.SetFuncs(L.NewTable(), exports)
+
+	// returns the module
+	L.Push(mod)
+	return 1
+}
+
+func makeAccount(L *lua.LState) int {
+	secrets := keypair()
+	addr := basics.Address(secrets.SignatureVerifier).String()
+	L.Push(lua.LString(addr))
+	return 1
+}
+
+func keypair() *crypto.SignatureSecrets {
+	var seed crypto.Seed
+	crypto.RandBytes(seed[:])
+	s := crypto.GenerateSignatureSecrets(seed)
+	return s
+}
+
+var appID = 1
+
+// Contract a contract type
+type Contract struct {
+	Contract map[string]map[string]string
+}
+
+var contractConfigs Contract
+
+func createAppFromConfig(L *lua.LState) int {
+	creator := L.CheckString(1)
+	sender, _ := basics.UnmarshalChecksumAddress(creator)
+
+	contractName := L.CheckString(2)
+	// parse contract configs
+	filename, _ := filepath.Abs("configs/contract1.yml")
+	config, _ := ioutil.ReadFile(filename)
+	yaml.Unmarshal(config, &contractConfigs)
+	//fmt.Printf("%+v\n", contractConfigs)
+	contract1Configs := contractConfigs.Contract[contractName]
+	localint, _ := strconv.ParseInt(contract1Configs["local_int"], 10, 64)
+	localbyte, _ := strconv.ParseInt(contract1Configs["local_byte"], 10, 64)
+	globalint, _ := strconv.ParseInt(contract1Configs["global_int"], 10, 64)
+	globalByte, _ := strconv.ParseInt(contract1Configs["global_byte"], 10, 64)
+	extraPages, _ := strconv.ParseInt(contract1Configs["extra_program_pages"], 10, 32)
+
+	// create an app
+	txn := transactions.Transaction{
+		Header: transactions.Header{
+			Sender:      sender,
+			Fee:         basics.MicroAlgos{},
+			FirstValid:  0,
+			LastValid:   0,
+			Note:        nil,
+			GenesisID:   "",
+			GenesisHash: crypto.Digest{},
+			Group:       crypto.Digest{},
+			Lease:       [32]byte{},
+			RekeyTo:     basics.Address{},
+		},
+		ApplicationCallTxnFields: transactions.ApplicationCallTxnFields{
+			ApplicationID:   0,
+			OnCompletion:    0,
+			ApplicationArgs: nil,
+			Accounts:        nil,
+			ForeignApps:     nil,
+			ForeignAssets:   nil,
+			LocalStateSchema: basics.StateSchema{
+				NumUint:      uint64(localint),
+				NumByteSlice: uint64(localbyte),
+			},
+			GlobalStateSchema: basics.StateSchema{
+				NumUint:      uint64(globalint),
+				NumByteSlice: uint64(globalByte),
+			},
+			ApprovalProgram:   []byte(contract1Configs["approval_program"]),
+			ClearStateProgram: []byte(contract1Configs["clear_state_program"]),
+			ExtraProgramPages: uint32(extraPages),
+		}}
+	ud := L.NewUserData()
+	ud.Value = txn
+	L.Push(ud)
+	L.SetMetatable(ud, L.GetTypeMetatable(luaAlgoTestName))
+
+	ops, _ := logic.AssembleStringWithVersion(contract1Configs["approval_program"], 6)
+	pd := logic.HashProgram(ops.Program)
+	addr := basics.Address(pd)
+	L.Push(lua.LNumber(appID))
+	L.Push(lua.LString(addr.String()))
+	appID++
+	return 2
+}
+
+func createAsa(L *lua.LState) int {
+	txn := transactions.Transaction{AssetConfigTxnFields: transactions.AssetConfigTxnFields{
+		ConfigAsset: 0,
+		AssetParams: basics.AssetParams{
+			Total:         0,
+			Decimals:      0,
+			DefaultFrozen: false,
+			UnitName:      "",
+			AssetName:     "",
+			URL:           "",
+			MetadataHash:  [32]byte{},
+			Manager:       basics.Address{},
+			Reserve:       basics.Address{},
+			Freeze:        basics.Address{},
+			Clawback:      basics.Address{},
+		},
+	}}
+	ud := L.NewUserData()
+	ud.Value = txn
+	L.Push(ud)
+	L.SetMetatable(ud, L.GetTypeMetatable(luaAlgoTestName))
+	return 1
+}
+
+func setAccountState(L *lua.LState) int {
+	return 1
+}
+
+func startPrivateNetwork(L *lua.LState) int {
+	return 1
 }
