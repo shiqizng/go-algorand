@@ -8,6 +8,7 @@ import (
 // Run a lua script.
 func Run(p common.Params) error {
 	L := lua.NewState()
+	registerTxnType(L)
 	L.PreloadModule("test", testLoader)
 	ncLoader := makeNodeControllerLoader("/Users/shiqi/go/bin", "/Users/shiqi/.algorand/testdir/testnet")
 	L.PreloadModule("algod", ncLoader)
