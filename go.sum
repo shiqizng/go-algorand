@@ -56,6 +56,8 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/algorand/falcon v0.0.0-20220130164023-c9e1d466f123 h1:cnUjJ/iqUjJNbhUzgmxbfwHMVFnz+DLnNQx8uJcGaks=
 github.com/algorand/falcon v0.0.0-20220130164023-c9e1d466f123/go.mod h1:OkQyHlGvS0kLNcIWbC21/uQcnbfwSOQm+wiqWwBG9pQ=
+github.com/algorand/go-algorand-sdk v1.17.0 h1:D9Ah3XUlwH/r/KrAps+F/qxEPzfDJvfOCbGkykOxzdQ=
+github.com/algorand/go-algorand-sdk v1.17.0/go.mod h1:Kx2pxVS7ViANRZl0fhWjR6LqCs7r3b5cAb12qc7hju0=
 github.com/algorand/go-codec v1.1.8 h1:XDSreeeZY8gMst6Edz4RBkl08/DGMJOeHYkoXL2B7wI=
 github.com/algorand/go-codec v1.1.8/go.mod h1:XhzVs6VVyWMLu6cApb9/192gBjGRVGm5cX5j203Heg4=
 github.com/algorand/go-codec/codec v1.1.8 h1:lsFuhcOH2LiEhpBH3BVUUkdevVmwCRyvb7FCAAPeY6U=

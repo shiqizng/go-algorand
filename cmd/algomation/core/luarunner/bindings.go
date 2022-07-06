@@ -1,12 +1,15 @@
 package luarunner
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 
+	"github.com/algorand/go-algorand-sdk/client/kmd"
+	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand/crypto"
 	"github.com/algorand/go-algorand/data/basics"
 	"github.com/algorand/go-algorand/data/transactions"
@@ -14,6 +17,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 	"gopkg.in/yaml.v2"
 
+	gosdk "github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand/nodecontrol"
 )
 
@@ -187,7 +191,6 @@ func AlgoTestLoader(L *lua.LState) int {
 		"makeAccount":         makeAccount,
 		"createAppFromConfig": createAppFromConfig,
 		"createAsa":           createAsa,
-		"setAccountState":     setAccountState,
 		"startPrivateNetwork": startPrivateNetwork,
 	}
 	// register functions to the table
@@ -199,10 +202,58 @@ func AlgoTestLoader(L *lua.LState) int {
 }
 
 func makeAccount(L *lua.LState) int {
+	src := "H6Y3Z3WWVSTI4LNTKFUPVFECG7CRD2PNSVCHY5M35EZ2YGWT66UYTSZ34I"
+	kmdClient := getKMDClient()
+	resp0, err := kmdClient.ListWallets()
+	if err != nil {
+		fmt.Printf("error listing wallets: %s\n", err)
+		return 0
+	}
+	fmt.Printf("Got %d wallet(s): %s\n", len(resp0.Wallets), resp0.Wallets[0].ID)
+	// Get a wallet handle
+	resp2, err := kmdClient.InitWalletHandle(resp0.Wallets[0].ID, "")
+	if err != nil {
+		fmt.Printf("Error initializing wallet: %s\n", err)
+		return 0
+	}
+	// Extract the wallet handle
+	exampleWalletHandleToken := resp2.WalletHandleToken
+
 	secrets := keypair()
 	addr := basics.Address(secrets.SignatureVerifier).String()
+	algodClient := getAlgodClient()
+
+	nodeStatus, err := algodClient.Status().Do(context.Background())
+	if err != nil {
+		fmt.Printf("error getting algod status: %s\n", err)
+		return 0
+	}
+	fmt.Printf("algod last round: %d\n", nodeStatus.LastRound)
+	//Get the suggested transaction parameters
+	txParams, err := algodClient.SuggestedParams().Do(context.Background())
+	if err != nil {
+		fmt.Printf("error getting suggested tx params: %s\n", err)
+		return 0
+	}
+	tx, err := future.MakePaymentTxn(src, addr, 1000000, nil, "", txParams)
+	if err != nil {
+		fmt.Printf("Error creating transaction: %s\n", err)
+		return 0
+	}
+	// Sign the same transaction with kmd
+	fmt.Println("Signing transaction with kmd")
+	resp5, err := kmdClient.SignTransaction(exampleWalletHandleToken, "", tx)
+	if err != nil {
+		fmt.Printf("Failed to sign transaction with kmd: %s\n", err)
+		return 0
+	}
 	L.Push(lua.LString(addr))
 
+	_, err = algodClient.SendRawTransaction(resp5.SignedTransaction).Do(context.Background())
+	if err != nil {
+		fmt.Printf("Failed to send txn: %s\n", err)
+		return 0
+	}
 	return 1
 }
 
@@ -310,10 +361,6 @@ func createAsa(L *lua.LState) int {
 	return 1
 }
 
-func setAccountState(L *lua.LState) int {
-	return 1
-}
-
 func startPrivateNetwork(L *lua.LState) int {
 	cmd := exec.Command("./sandbox", "up", "-v")
 	cmd.Dir = "/Users/shiqi/projects/sandbox"
@@ -324,4 +371,26 @@ func startPrivateNetwork(L *lua.LState) int {
 	}
 	L.Push(lua.LString(out))
 	return 1
+}
+
+func assertAccountState(L *lua.LState) {
+
+}
+
+func getKMDClient() kmd.Client {
+	kmdClient, err := kmd.MakeClient("http://localhost:4002", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	if err != nil {
+		fmt.Printf("failed to make kmd client: %s\n", err)
+		return kmd.Client{}
+	}
+	fmt.Println("Made a kmd client")
+	return kmdClient
+}
+func getAlgodClient() *gosdk.Client {
+	algodClient, err := gosdk.MakeClient("http://localhost:4001", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	if err != nil {
+		fmt.Printf("failed to make algod client: %s\n", err)
+		return nil
+	}
+	return algodClient
 }
