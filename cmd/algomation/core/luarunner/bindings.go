@@ -9,8 +9,9 @@ import (
 	"strconv"
 
 	"github.com/algorand/go-algorand-sdk/client/kmd"
+	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/future"
-	"github.com/algorand/go-algorand/crypto"
+	"github.com/algorand/go-algorand-sdk/types"
 	"github.com/algorand/go-algorand/data/basics"
 	"github.com/algorand/go-algorand/data/transactions"
 	"github.com/algorand/go-algorand/data/transactions/logic"
@@ -176,8 +177,39 @@ var txnMethods = map[string]lua.LGFunction{
 
 func submit(L *lua.LState) int {
 	ud := L.CheckUserData(1)
-	txn := ud.Value.(transactions.Transaction)
-	L.Push(lua.LString(txn.Sender.String()))
+	walletID := L.CheckString(2)
+	txn := ud.Value.(types.Transaction)
+	kmdClient := getKMDClient()
+	resp2, err := kmdClient.InitWalletHandle(walletID, "")
+	if err != nil {
+		fmt.Printf("Error initializing wallet: %s\n", err)
+		return 0
+	}
+
+	// Extract the wallet handle
+	walletHandleToken := resp2.WalletHandleToken
+
+	//extra pk
+	resp4, err := kmdClient.ExportKey(walletHandleToken, "", txn.Sender.String())
+	if err != nil {
+		fmt.Printf("Error extracting secret key: %s\n", err)
+		return 0
+	}
+	privateKey := resp4.PrivateKey
+
+	_, stxn, err := crypto.SignTransaction(privateKey, txn)
+	if err != nil {
+		fmt.Printf("Failed to sign transaction: %s\n", err)
+		return 0
+	}
+
+	algodClient := getAlgodClient()
+	txid, err := algodClient.SendRawTransaction(stxn).Do(context.Background())
+	if err != nil {
+		fmt.Printf("Failed to send txn: %s\n", err)
+		return 0
+	}
+	L.Push(lua.LString(txid))
 	return 1
 }
 
@@ -219,8 +251,14 @@ func makeAccount(L *lua.LState) int {
 	// Extract the wallet handle
 	exampleWalletHandleToken := resp2.WalletHandleToken
 
-	secrets := keypair()
-	addr := basics.Address(secrets.SignatureVerifier).String()
+	resp3, err := kmdClient.GenerateKey(exampleWalletHandleToken)
+	if err != nil {
+		fmt.Printf("Error generating key: %s\n", err)
+		return 0
+	}
+	fmt.Printf("Generated address %s\n", resp3.Address)
+
+	addr := resp3.Address
 	algodClient := getAlgodClient()
 
 	nodeStatus, err := algodClient.Status().Do(context.Background())
@@ -257,18 +295,11 @@ func makeAccount(L *lua.LState) int {
 	return 1
 }
 
-func keypair() *crypto.SignatureSecrets {
-	var seed crypto.Seed
-	crypto.RandBytes(seed[:])
-	s := crypto.GenerateSignatureSecrets(seed)
-	return s
-}
-
 //var appID = 1
 
 // Contract a contract type
 type Contract struct {
-	Contract map[string]map[string]string
+	Contracts map[string]map[string]string
 }
 
 var contractConfigs Contract
@@ -279,61 +310,61 @@ func createAppFromConfig(L *lua.LState) int {
 
 	contractName := L.CheckString(2)
 	// parse contract configs
-	filename, _ := filepath.Abs("configs/contract1.yml")
-	config, _ := ioutil.ReadFile(filename)
-	yaml.Unmarshal(config, &contractConfigs)
+	filename, _ := filepath.Abs("configs/demo.yml")
+	config, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Printf("error : %s\n", err)
+		return 0
+	}
+	err = yaml.Unmarshal(config, &contractConfigs)
+	if err != nil {
+		fmt.Printf("error : %s\n", err)
+		return 0
+	}
 	//fmt.Printf("%+v\n", contractConfigs)
-	contract1Configs := contractConfigs.Contract[contractName]
+	yaml.Unmarshal(config, &contractConfigs)
+	contract1Configs := contractConfigs.Contracts[contractName]
 	localint, _ := strconv.ParseInt(contract1Configs["local_int"], 10, 64)
 	localbyte, _ := strconv.ParseInt(contract1Configs["local_byte"], 10, 64)
 	globalint, _ := strconv.ParseInt(contract1Configs["global_int"], 10, 64)
 	globalByte, _ := strconv.ParseInt(contract1Configs["global_byte"], 10, 64)
-	extraPages, _ := strconv.ParseInt(contract1Configs["extra_program_pages"], 10, 32)
+	extraPages, _ := strconv.ParseInt(contract1Configs["extra_program_pages"], 10, 64)
 
+	globalState := types.StateSchema{
+		NumUint:      uint64(globalint),
+		NumByteSlice: uint64(globalByte),
+	}
+
+	localState := types.StateSchema{
+		NumUint:      uint64(localint),
+		NumByteSlice: uint64(localbyte),
+	}
 	// create an app
-	txn := transactions.Transaction{
-		Header: transactions.Header{
-			Sender:      sender,
-			Fee:         basics.MicroAlgos{},
-			FirstValid:  0,
-			LastValid:   0,
-			Note:        nil,
-			GenesisID:   "",
-			GenesisHash: crypto.Digest{},
-			Group:       crypto.Digest{},
-			Lease:       [32]byte{},
-			RekeyTo:     basics.Address{},
-		},
-		ApplicationCallTxnFields: transactions.ApplicationCallTxnFields{
-			ApplicationID:   0,
-			OnCompletion:    0,
-			ApplicationArgs: nil,
-			Accounts:        nil,
-			ForeignApps:     nil,
-			ForeignAssets:   nil,
-			LocalStateSchema: basics.StateSchema{
-				NumUint:      uint64(localint),
-				NumByteSlice: uint64(localbyte),
-			},
-			GlobalStateSchema: basics.StateSchema{
-				NumUint:      uint64(globalint),
-				NumByteSlice: uint64(globalByte),
-			},
-			ApprovalProgram:   []byte(contract1Configs["approval_program"]),
-			ClearStateProgram: []byte(contract1Configs["clear_state_program"]),
-			ExtraProgramPages: uint32(extraPages),
-		}}
+	algodClient := getAlgodClient()
+	sp, err := algodClient.SuggestedParams().Do(context.Background())
+	if err != nil {
+		fmt.Printf("error getting suggested tx params: %s\n", err)
+		return 0
+	}
+
+	ops, _ := logic.AssembleStringWithVersion(contract1Configs["approval_program"], 6)
+	pd := logic.HashProgram(ops.Program)
+	clear, _ := logic.AssembleStringWithVersion(contract1Configs["clear_state_program"], 6)
+
+	txn, err := future.MakeApplicationCreateTxWithExtraPages(true, ops.Program, clear.Program,
+		globalState, localState, nil, nil, nil, nil, sp, types.Address(sender), nil, types.Digest{}, [32]byte{}, types.Address{}, uint32(extraPages))
+	if err != nil {
+		fmt.Printf("error creating an app: %s\n", err)
+		return 0
+	}
+
 	ud := L.NewUserData()
 	ud.Value = txn
 	L.Push(ud) // return txn
 	L.SetMetatable(ud, L.GetTypeMetatable(algoTestTxnType))
 
-	ops, _ := logic.AssembleStringWithVersion(contract1Configs["approval_program"], 6)
-	pd := logic.HashProgram(ops.Program)
 	addr := basics.Address(pd) // return contract address
-	//L.Push(lua.LNumber(appID))
 	L.Push(lua.LString(addr.String()))
-	//appID++
 	return 2 // return 2 values
 }
 
