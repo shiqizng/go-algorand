@@ -3,7 +3,6 @@ package luarunner
 import (
 	"fmt"
 	"io/ioutil"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 
@@ -92,6 +91,7 @@ func makeNodeControllerLoader(bindir, datadir string) lua.LGFunction {
 }
 
 const luaNodeControllerName = "node-controller"
+const luaAlgoTestName = "AlgotTest"
 
 func checkNodeController(L *lua.LState) *nodecontrol.NodeController {
 	ud := L.CheckUserData(1)
@@ -155,28 +155,6 @@ func registerNodeControllerType(L *lua.LState) {
 	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), methods))
 }
 
-const luaAlgoTestName = "AlgotTest"
-
-const algoTestTxnType = "txn"
-
-func registerTxnType(L *lua.LState) {
-	mt := L.NewTypeMetatable(algoTestTxnType)
-	L.SetGlobal("txn", mt)
-	// methods
-	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), txnMethods))
-}
-
-var txnMethods = map[string]lua.LGFunction{
-	"submit": submit,
-}
-
-func submit(L *lua.LState) int {
-	ud := L.CheckUserData(1)
-	txn := ud.Value.(transactions.Transaction)
-	L.Push(lua.LString(txn.Sender.String()))
-	return 1
-}
-
 // AlgoTestLoader defines test methods
 // Example lua:
 // 	   local t = require("algotest")
@@ -212,7 +190,7 @@ func keypair() *crypto.SignatureSecrets {
 	return s
 }
 
-//var appID = 1
+var appID = 1
 
 // Contract a contract type
 type Contract struct {
@@ -273,16 +251,16 @@ func createAppFromConfig(L *lua.LState) int {
 		}}
 	ud := L.NewUserData()
 	ud.Value = txn
-	L.Push(ud) // return txn
-	L.SetMetatable(ud, L.GetTypeMetatable(algoTestTxnType))
+	L.Push(ud)
+	L.SetMetatable(ud, L.GetTypeMetatable(luaAlgoTestName))
 
 	ops, _ := logic.AssembleStringWithVersion(contract1Configs["approval_program"], 6)
 	pd := logic.HashProgram(ops.Program)
-	addr := basics.Address(pd) // return contract address
-	//L.Push(lua.LNumber(appID))
+	addr := basics.Address(pd)
+	L.Push(lua.LNumber(appID))
 	L.Push(lua.LString(addr.String()))
-	//appID++
-	return 2 // return 2 values
+	appID++
+	return 2
 }
 
 func createAsa(L *lua.LState) int {
@@ -314,13 +292,5 @@ func setAccountState(L *lua.LState) int {
 }
 
 func startPrivateNetwork(L *lua.LState) int {
-	cmd := exec.Command("./sandbox", "up", "-v")
-	cmd.Dir = "/Users/shiqi/projects/sandbox"
-	out, err := cmd.Output()
-	if err != nil {
-		L.Push(lua.LString(err.Error()))
-		return 1
-	}
-	L.Push(lua.LString(out))
 	return 1
 }
