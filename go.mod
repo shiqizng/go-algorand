@@ -73,4 +73,5 @@ require (
 	gopkg.in/toast.v1 v1.0.0-20180812000517-0a84660828b2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	layeh.com/gopher-json v0.0.0-20201124131017-552bb3c4c3bf // indirect
 )

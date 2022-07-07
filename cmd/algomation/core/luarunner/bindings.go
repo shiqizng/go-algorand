@@ -2,6 +2,7 @@ package luarunner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/algorand/go-algorand-sdk/client/kmd"
+	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/future"
 	"github.com/algorand/go-algorand-sdk/types"
@@ -20,6 +22,7 @@ import (
 
 	gosdk "github.com/algorand/go-algorand-sdk/client/v2/algod"
 	"github.com/algorand/go-algorand/nodecontrol"
+	luajson "layeh.com/gopher-json"
 )
 
 // testLoader basic module test that also has field.
@@ -163,6 +166,7 @@ func registerNodeControllerType(L *lua.LState) {
 const luaAlgoTestName = "AlgotTest"
 
 const algoTestTxnType = "txn"
+const algoTestAccountType = "account"
 
 func registerTxnType(L *lua.LState) {
 	mt := L.NewTypeMetatable(algoTestTxnType)
@@ -209,9 +213,32 @@ func submit(L *lua.LState) int {
 		fmt.Printf("Failed to send txn: %s\n", err)
 		return 0
 	}
-	L.Push(lua.LString(txid))
+	_, err = future.WaitForConfirmation(algodClient, txid, 5, context.Background())
+	if err != nil {
+		fmt.Printf("wait for confirmation err: %s\n", err)
+		return 0
+	}
+
+	response, _, err := algodClient.PendingTransactionInformation(txid).Do(context.Background())
+	applicationID := response.ApplicationIndex
+	L.Push(lua.LNumber(applicationID))
 	return 1
 }
+
+//func registerAccountType(L *lua.LState) {
+//	mt := L.NewTypeMetatable(algoTestAccountType)
+//	L.SetGlobal("account", mt)
+//	// methods
+//	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), accountMethods))
+//}
+//
+//var accountMethods = map[string]lua.LGFunction{
+//	"setBalance": setBalance,
+//}
+//
+//func setBalance(L *lua.LState) int {
+//	return 0
+//}
 
 // AlgoTestLoader defines test methods
 // Example lua:
@@ -224,6 +251,7 @@ func AlgoTestLoader(L *lua.LState) int {
 		"createAppFromConfig": createAppFromConfig,
 		"createAsa":           createAsa,
 		"startPrivateNetwork": startPrivateNetwork,
+		"assertAccountStates": assertAccountStates,
 	}
 	// register functions to the table
 	mod := L.SetFuncs(L.NewTable(), exports)
@@ -404,8 +432,51 @@ func startPrivateNetwork(L *lua.LState) int {
 	return 1
 }
 
-func assertAccountState(L *lua.LState) {
+func assertAccountStates(L *lua.LState) int {
+	account := L.CheckString(1)
+	expected := L.CheckTable(2)
+	algodClient := getAlgodClient()
+	resp, err := algodClient.AccountInformation(account).Do(context.Background())
+	if err != nil {
+		fmt.Printf("error getting account info: %v\n", err)
+		return 0
+	}
 
+	bal, _ := strconv.ParseInt(expected.RawGet(lua.LString("balance")).String(), 10, 64)
+	if uint64(bal) != resp.Amount {
+		fmt.Printf("Error: account balance %d does not match expected balance %d", resp.Amount, bal)
+		return 0
+	}
+
+	appCounts, _ := strconv.ParseInt(expected.RawGet(lua.LString("totalapps")).String(), 10, 64)
+	if uint64(appCounts) != resp.TotalCreatedApps {
+		fmt.Printf("Error: total created apps %d is not %d", len(resp.CreatedApps), appCounts)
+		return 0
+	}
+	apps := expected.RawGet(lua.LString("apps"))
+	//apps.
+	val, _ := luajson.Encode(apps)
+	var table []map[string]interface{}
+	json.Unmarshal(val, &table)
+	//fmt.Println(apps)
+	//fmt.Println(string(val))
+	//fmt.Printf("%+v\n", table)
+
+	actualApps := make(map[uint64]models.Application)
+	for _, app := range resp.CreatedApps {
+		actualApps[app.Id] = app
+	}
+	for i := 0; i < len(table); i++ {
+		expectedApp := table[i]
+		actualApp := actualApps[uint64(expectedApp["id"].(float64))]
+		extraPages := uint64(expectedApp["extrapages"].(float64))
+		if extraPages != actualApp.Params.ExtraProgramPages {
+			fmt.Printf("Error: app extra pages %d is not %d\n", actualApp.Params.ExtraProgramPages, extraPages)
+			return 0
+		}
+	}
+	fmt.Println("Test Pass")
+	return 0
 }
 
 func getKMDClient() kmd.Client {
@@ -414,7 +485,6 @@ func getKMDClient() kmd.Client {
 		fmt.Printf("failed to make kmd client: %s\n", err)
 		return kmd.Client{}
 	}
-	fmt.Println("Made a kmd client")
 	return kmdClient
 }
 func getAlgodClient() *gosdk.Client {
