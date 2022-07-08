@@ -225,21 +225,6 @@ func submit(L *lua.LState) int {
 	return 1
 }
 
-//func registerAccountType(L *lua.LState) {
-//	mt := L.NewTypeMetatable(algoTestAccountType)
-//	L.SetGlobal("account", mt)
-//	// methods
-//	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), accountMethods))
-//}
-//
-//var accountMethods = map[string]lua.LGFunction{
-//	"setBalance": setBalance,
-//}
-//
-//func setBalance(L *lua.LState) int {
-//	return 0
-//}
-
 // AlgoTestLoader defines test methods
 // Example lua:
 // 	   local t = require("algotest")
@@ -315,11 +300,18 @@ func makeAccount(L *lua.LState) int {
 	}
 	L.Push(lua.LString(addr))
 
-	_, err = algodClient.SendRawTransaction(resp5.SignedTransaction).Do(context.Background())
+	txid, err := algodClient.SendRawTransaction(resp5.SignedTransaction).Do(context.Background())
 	if err != nil {
 		fmt.Printf("Failed to send txn: %s\n", err)
 		return 0
 	}
+
+	_, err = future.WaitForConfirmation(algodClient, txid, 5, context.Background())
+	if err != nil {
+		fmt.Printf("wait for confirmation err: %s\n", err)
+		return 0
+	}
+
 	return 1
 }
 
@@ -442,40 +434,49 @@ func assertAccountStates(L *lua.LState) int {
 		return 0
 	}
 
-	bal, _ := strconv.ParseInt(expected.RawGet(lua.LString("balance")).String(), 10, 64)
-	if uint64(bal) != resp.Amount {
-		fmt.Printf("Error: account balance %d does not match expected balance %d", resp.Amount, bal)
-		return 0
-	}
-
-	appCounts, _ := strconv.ParseInt(expected.RawGet(lua.LString("totalapps")).String(), 10, 64)
-	if uint64(appCounts) != resp.TotalCreatedApps {
-		fmt.Printf("Error: total created apps %d is not %d", len(resp.CreatedApps), appCounts)
-		return 0
-	}
-	apps := expected.RawGet(lua.LString("apps"))
-	//apps.
-	val, _ := luajson.Encode(apps)
-	var table []map[string]interface{}
-	json.Unmarshal(val, &table)
-	//fmt.Println(apps)
-	//fmt.Println(string(val))
-	//fmt.Printf("%+v\n", table)
-
-	actualApps := make(map[uint64]models.Application)
-	for _, app := range resp.CreatedApps {
-		actualApps[app.Id] = app
-	}
-	for i := 0; i < len(table); i++ {
-		expectedApp := table[i]
-		actualApp := actualApps[uint64(expectedApp["id"].(float64))]
-		extraPages := uint64(expectedApp["extrapages"].(float64))
-		if extraPages != actualApp.Params.ExtraProgramPages {
-			fmt.Printf("Error: app extra pages %d is not %d\n", actualApp.Params.ExtraProgramPages, extraPages)
+	// check balance
+	if expected.RawGet(lua.LString("balance")) != nil {
+		bal, _ := strconv.ParseInt(expected.RawGet(lua.LString("balance")).String(), 10, 64)
+		if uint64(bal) != resp.Amount {
+			fmt.Printf("Error: account balance %d does not match expected balance %d", resp.Amount, bal)
 			return 0
 		}
 	}
-	fmt.Println("Test Pass")
+
+	//check apps count
+	if expected.RawGet(lua.LString("totalapps")) != nil {
+		appCounts, _ := strconv.ParseInt(expected.RawGet(lua.LString("totalapps")).String(), 10, 64)
+		if uint64(appCounts) != resp.TotalCreatedApps {
+			fmt.Printf("Error: total created apps %d is not %d", len(resp.CreatedApps), appCounts)
+			return 0
+		}
+	}
+
+	// check app params
+	if expected.RawGet(lua.LString("apps")) != nil {
+		apps := expected.RawGet(lua.LString("apps"))
+		//apps.
+		appsJSON, _ := luajson.Encode(apps)
+		var appsArr []map[string]interface{}
+		json.Unmarshal(appsJSON, &appsArr)
+		//fmt.Println(apps)
+		//fmt.Println(string(val))
+		//fmt.Printf("%+v\n", table)
+
+		actualApps := make(map[uint64]models.Application)
+		for _, app := range resp.CreatedApps {
+			actualApps[app.Id] = app
+		}
+		for i := 0; i < len(appsArr); i++ {
+			expectedApp := appsArr[i]
+			actualApp := actualApps[uint64(expectedApp["id"].(float64))]
+			extraPages := uint64(expectedApp["extrapages"].(float64))
+			if extraPages != actualApp.Params.ExtraProgramPages {
+				fmt.Printf("Error: app extra pages %d is not %d\n", actualApp.Params.ExtraProgramPages, extraPages)
+				return 0
+			}
+		}
+	}
 	return 0
 }
 
