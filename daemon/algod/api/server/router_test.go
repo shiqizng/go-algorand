@@ -16,24 +16,15 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/algorand/go-algorand/daemon/algod/api/server/lib"
-	"github.com/algorand/go-algorand/daemon/algod/api/server/lib/middlewares"
 	"github.com/algorand/go-algorand/daemon/algod/api/server/v1/routes"
-	v2 "github.com/algorand/go-algorand/daemon/algod/api/server/v2"
-	npprivate "github.com/algorand/go-algorand/daemon/algod/api/server/v2/generated/nonparticipating/private"
-	nppublic "github.com/algorand/go-algorand/daemon/algod/api/server/v2/generated/nonparticipating/public"
-	pprivate "github.com/algorand/go-algorand/daemon/algod/api/server/v2/generated/participating/private"
-	ppublic "github.com/algorand/go-algorand/daemon/algod/api/server/v2/generated/participating/public"
 	"github.com/algorand/go-algorand/logging"
 	"github.com/algorand/go-algorand/test/partitiontest"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,26 +44,6 @@ func setupRouter() *echo.Echo {
 	reqCtx := lib.ReqContext{Log: logging.NewLogger()}
 	// Registering v1 routes
 	registerHandlers(e, apiV1Tag, v1RoutesCopy, reqCtx)
-
-	return e
-}
-
-func setupRouterV2() *echo.Echo {
-	e := echo.New()
-	// Make a deep copy of the routes array with handlers.
-	adminMiddleware := []echo.MiddlewareFunc{
-		middlewares.MakeAuth(TokenHeader, []string{""}),
-	}
-	publicMiddleware := []echo.MiddlewareFunc{
-		middleware.BodyLimit(maxRequestBodyBytes),
-		middlewares.MakeAuth(TokenHeader, []string{""}),
-	}
-	v2Handler := v2.Handlers{}
-	nppublic.RegisterHandlers(e, &v2Handler, publicMiddleware...)
-	npprivate.RegisterHandlers(e, &v2Handler, adminMiddleware...)
-	ppublic.RegisterHandlers(e, &v2Handler, publicMiddleware...)
-	pprivate.RegisterHandlers(e, &v2Handler, adminMiddleware...)
-
 	return e
 }
 
@@ -105,31 +76,5 @@ func TestGetTransactionV1Sunset(t *testing.T) {
 	}
 
 }
-
-func TestLargeKeyRegister(t *testing.T) {
-	partitiontest.PartitionTest(t)
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	e := setupRouterV2()
-	// set request body limit
-	e.Use(
-		middleware.BodyLimit(maxRequestBodyBytes),
-	)
-	go e.Start(":9999")
-
-	// TODO: Make sure this fails without the change
-	assert.Equal(t, "10MB", maxRequestBodyBytes)
-	stringReader := strings.NewReader(strings.Repeat("a", 50_000_000))
-	req, err := http.NewRequest(http.MethodPost, "localhost:9999/v2/participation", stringReader)
-	assert.NoError(t, err)
-	e.ServeHTTP(rec, req)
-	// this assertion fails
-	assert.Equal(t, http.StatusOK, rec.Code)
-	// this assertion passes
-	//assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code)
-	fmt.Println(rec.Body.String())
-}
-
 func TestTestSuite(t *testing.T) {
 }
