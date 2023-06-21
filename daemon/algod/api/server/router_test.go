@@ -59,9 +59,6 @@ func setupRouter() *echo.Echo {
 
 func setupRouterV2() *echo.Echo {
 	e := echo.New()
-	e.Use(
-		middleware.BodyLimit(maxRequestBodyBytes),
-	)
 	// Make a deep copy of the routes array with handlers.
 	adminMiddleware := []echo.MiddlewareFunc{
 		middlewares.MakeAuth(TokenHeader, []string{""}),
@@ -115,6 +112,10 @@ func TestLargeKeyRegister(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	e := setupRouterV2()
+	// set request body limit
+	e.Use(
+		middleware.BodyLimit(maxRequestBodyBytes),
+	)
 	go e.Start(":9999")
 
 	// TODO: Make sure this fails without the change
