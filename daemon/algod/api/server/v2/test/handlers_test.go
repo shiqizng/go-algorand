@@ -2261,7 +2261,7 @@ func TestLargeKeyRegister(t *testing.T) {
 	ppublic.RegisterHandlers(s, &handler, publicMiddleware...)
 	pprivate.RegisterHandlers(s, &handler, adminMiddleware...)
 	go s.Start(":9998")
-	req, err = http.NewRequest(http.MethodPost, "http://localhost:9999/v2/participation", stringReader)
+	req, err = http.NewRequest(http.MethodPost, "http://localhost:9998/v2/participation", stringReader)
 	assert.NoError(t, err)
 	s.ServeHTTP(rec2, req)
 	assert.Equal(t, http.StatusOK, rec2.Code)
