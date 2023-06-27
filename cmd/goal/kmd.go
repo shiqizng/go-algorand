@@ -49,19 +49,19 @@ func startKMDForDataDir(binDir, algodDataDir, kmdDataDir string) {
 	begin := time.Now()
 	start := time.Now()
 	nc := nodecontrol.MakeNodeController(binDir, algodDataDir)
-	fmt.Printf("nodecontrol %d seconds\n", time.Since(start).Seconds())
+	fmt.Printf("nodecontrol %v seconds\n", time.Since(start).Seconds())
 	start = time.Now()
 	nc.SetKMDDataDir(kmdDataDir)
-	fmt.Printf("SetKMD %d seconds\n", time.Since(start).Seconds())
+	fmt.Printf("SetKMD %v seconds\n", time.Since(start).Seconds())
 	start = time.Now()
 	nc.StopKMD()
-	fmt.Printf("StopKMD %d seconds\n", time.Since(start).Seconds())
+	fmt.Printf("StopKMD %v seconds\n", time.Since(start).Seconds())
 	kmdArgs := nodecontrol.KMDStartArgs{
 		TimeoutSecs: kmdTimeoutSecs,
 	}
 	start = time.Now()
 	kmdAlreadyRunning, err := nc.StartKMD(kmdArgs)
-	fmt.Printf("StartKMD %d seconds\n", time.Since(start).Seconds())
+	fmt.Printf("StartKMD %v seconds\n", time.Since(start).Seconds())
 	if err != nil {
 		reportErrorf(errorKMDFailedToStart, err)
 	}
@@ -69,7 +69,7 @@ func startKMDForDataDir(binDir, algodDataDir, kmdDataDir string) {
 		reportInfoln(infoKMDAlreadyStarted)
 	} else {
 		reportInfoln(infoKMDStarted)
-		fmt.Printf("infoKMDStart %d seconds\n", time.Since(begin).Seconds())
+		fmt.Printf("infoKMDStart %v seconds\n", time.Since(begin).Seconds())
 	}
 }
 
