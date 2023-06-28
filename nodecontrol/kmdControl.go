@@ -118,17 +118,23 @@ func (kc KMDController) GetKMDPID() (pid int64, err error) {
 // StopKMD reads the net file and kills the kmd process
 func (kc *KMDController) StopKMD() (alreadyStopped bool, err error) {
 	// Find kmd PID
+	start := time.Now()
 	kmdPID, err := kc.GetKMDPID()
+	fmt.Printf("get kmd pid took %v, err: %v, kmdPID: %v\n", time.Since(start), err, kmdPID)
 	if err == nil {
+		start = time.Now()
 		// Kill kmd by PID
 		killed, killErr := killPID(int(kmdPID))
+		fmt.Printf("kill pid took %v\n", time.Since(start))
 		if killErr != nil {
+			fmt.Printf("kill err %v\n", killErr)
 			return false, killErr
 		}
 		// if we ended up killing the process, make sure to delete the pid file to avoid
 		// potential downstream issues.
 		if killed {
 			// delete the pid file.
+			fmt.Printf("deleted pid file: %v\n", kc.kmdPIDPath)
 			os.Remove(kc.kmdPIDPath)
 		}
 	} else {

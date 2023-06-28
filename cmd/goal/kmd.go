@@ -17,6 +17,9 @@
 package main
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/spf13/cobra"
 
 	"github.com/algorand/go-algorand/cmd/util/datadir"
@@ -43,13 +46,22 @@ var kmdCmd = &cobra.Command{
 }
 
 func startKMDForDataDir(binDir, algodDataDir, kmdDataDir string) {
+	begin := time.Now()
+	start := time.Now()
 	nc := nodecontrol.MakeNodeController(binDir, algodDataDir)
+	fmt.Printf("nodecontrol %v\n", time.Since(start).Seconds())
+	start = time.Now()
 	nc.SetKMDDataDir(kmdDataDir)
+	fmt.Printf("SetKMD %v\n", time.Since(start).Seconds())
+	start = time.Now()
 	nc.StopKMD()
+	fmt.Printf("StopKMD %v\n", time.Since(start).Seconds())
 	kmdArgs := nodecontrol.KMDStartArgs{
 		TimeoutSecs: kmdTimeoutSecs,
 	}
+	start = time.Now()
 	kmdAlreadyRunning, err := nc.StartKMD(kmdArgs)
+	fmt.Printf("StartKMD %v seconds\n", time.Since(start).Seconds())
 	if err != nil {
 		reportErrorf(errorKMDFailedToStart, err)
 	}
@@ -57,6 +69,7 @@ func startKMDForDataDir(binDir, algodDataDir, kmdDataDir string) {
 		reportInfoln(infoKMDAlreadyStarted)
 	} else {
 		reportInfoln(infoKMDStarted)
+		fmt.Printf("infoKMDStart %v seconds\n", time.Since(begin).Seconds())
 	}
 }
 

@@ -17,6 +17,7 @@
 package nodecontrol
 
 import (
+	"fmt"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -112,17 +113,23 @@ func (nc NodeController) stopProcesses() (kmdAlreadyStopped bool, err error) {
 }
 
 func killPID(pid int) (killed bool, err error) {
+	start := time.Now()
 	process, err := util.FindProcess(pid)
 	if process == nil || err != nil {
+		fmt.Printf("before err, time since find process: %v\n", time.Since(start))
 		return false, err
 	}
 
+	start = time.Now()
 	err = util.KillProcess(pid, syscall.SIGTERM)
+	fmt.Printf("before err, time since kill process: %v\n", time.Since(start))
 	if err != nil {
 		return false, err
 	}
+	fmt.Printf("after err, time since kill process: %v\n", time.Since(start))
 	waitLong := time.After(time.Second * 30)
 	for {
+		start = time.Now()
 		// Send null signal - if process still exists, it'll return nil
 		// So when we get an error, assume it's gone.
 		if err = process.Signal(syscall.Signal(0)); err != nil {
@@ -130,6 +137,7 @@ func killPID(pid int) (killed bool, err error) {
 		}
 		select {
 		case <-waitLong:
+			fmt.Printf("time since loop: %v\n", time.Since(start))
 			return true, util.KillProcess(pid, syscall.SIGKILL)
 		case <-time.After(time.Millisecond * 100):
 		}
