@@ -54,7 +54,7 @@ func startKMDForDataDir(binDir, algodDataDir, kmdDataDir string) {
 	nc.SetKMDDataDir(kmdDataDir)
 	fmt.Printf("SetKMD %v\n", time.Since(start).Seconds())
 	start = time.Now()
-	time.Sleep(10 * time.Minute)
+	time.Sleep(45 * time.Second)
 	nc.StopKMD()
 	fmt.Printf("StopKMD %v\n", time.Since(start).Seconds())
 	kmdArgs := nodecontrol.KMDStartArgs{
