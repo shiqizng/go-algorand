@@ -134,6 +134,7 @@ func (kc *KMDController) StopKMD() (alreadyStopped bool, err error) {
 		// potential downstream issues.
 		if killed {
 			// delete the pid file.
+			fmt.Printf("deleted pid file: %v\n", kc.kmdPIDPath)
 			os.Remove(kc.kmdPIDPath)
 		}
 	} else {
