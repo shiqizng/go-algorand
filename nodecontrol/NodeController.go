@@ -116,7 +116,6 @@ func killPID(pid int) (killed bool, err error) {
 	start := time.Now()
 	process, err := util.FindProcess(pid)
 	if process == nil || err != nil {
-		fmt.Printf("before err, time since find process: %v\n", time.Since(start))
 		return false, err
 	}
 
@@ -129,15 +128,18 @@ func killPID(pid int) (killed bool, err error) {
 	fmt.Printf("after err, time since kill process: %v\n", time.Since(start))
 	waitLong := time.After(time.Second * 30)
 	for {
-		start = time.Now()
 		// Send null signal - if process still exists, it'll return nil
 		// So when we get an error, assume it's gone.
 		if err = process.Signal(syscall.Signal(0)); err != nil {
 			return false, nil
 		}
+		fmt.Printf("signal err: %v\n", err)
+		process, err = util.FindProcess(pid)
+		if process == nil || err != nil {
+			fmt.Println("process not found")
+		}
 		select {
 		case <-waitLong:
-			fmt.Printf("time since loop: %v\n", time.Since(start))
 			return true, util.KillProcess(pid, syscall.SIGKILL)
 		case <-time.After(time.Millisecond * 100):
 		}
