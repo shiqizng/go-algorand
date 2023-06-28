@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"syscall"
@@ -119,6 +120,7 @@ func (kc KMDController) GetKMDPID() (pid int64, err error) {
 func (kc *KMDController) StopKMD() (alreadyStopped bool, err error) {
 	// Find kmd PID
 	start := time.Now()
+	signal.Ignore(syscall.SIGCHLD)
 	kmdPID, err := kc.GetKMDPID()
 	fmt.Printf("get kmd pid took %v, err: %v, kmdPID: %v\n", time.Since(start), err, kmdPID)
 	if err == nil {
