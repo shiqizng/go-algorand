@@ -125,6 +125,7 @@ func (kc *KMDController) StopKMD() (alreadyStopped bool, err error) {
 		start = time.Now()
 		// Kill kmd by PID
 		killed, killErr := killPID(int(kmdPID))
+		fmt.Printf("kmdPIDPath: %v\n", kc.kmdPIDPath)
 		fmt.Printf("kill pid took %v\n", time.Since(start))
 		if killErr != nil {
 			fmt.Printf("kill err %v\n", killErr)
