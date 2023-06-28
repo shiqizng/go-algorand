@@ -113,12 +113,14 @@ func (nc NodeController) stopProcesses() (kmdAlreadyStopped bool, err error) {
 }
 
 func killPID(pid int) (killed bool, err error) {
+	start := time.Now()
 	process, err := util.FindProcess(pid)
 	if process == nil || err != nil {
+		fmt.Printf("before err, time since find process: %v\n", time.Since(start))
 		return false, err
 	}
 
-	start := time.Now()
+	start = time.Now()
 	err = util.KillProcess(pid, syscall.SIGTERM)
 	fmt.Printf("before err, time since kill process: %v\n", time.Since(start))
 	if err != nil {

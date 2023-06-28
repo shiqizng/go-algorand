@@ -49,13 +49,13 @@ func startKMDForDataDir(binDir, algodDataDir, kmdDataDir string) {
 	begin := time.Now()
 	start := time.Now()
 	nc := nodecontrol.MakeNodeController(binDir, algodDataDir)
-	fmt.Printf("nodecontrol %v seconds\n", time.Since(start).Seconds())
+	fmt.Printf("nodecontrol %v\n", time.Since(start).Seconds())
 	start = time.Now()
 	nc.SetKMDDataDir(kmdDataDir)
-	fmt.Printf("SetKMD %v seconds\n", time.Since(start).Seconds())
+	fmt.Printf("SetKMD %v\n", time.Since(start).Seconds())
 	start = time.Now()
 	nc.StopKMD()
-	fmt.Printf("StopKMD %v seconds\n", time.Since(start).Seconds())
+	fmt.Printf("StopKMD %v\n", time.Since(start).Seconds())
 	kmdArgs := nodecontrol.KMDStartArgs{
 		TimeoutSecs: kmdTimeoutSecs,
 	}

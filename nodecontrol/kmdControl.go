@@ -120,13 +120,14 @@ func (kc *KMDController) StopKMD() (alreadyStopped bool, err error) {
 	// Find kmd PID
 	start := time.Now()
 	kmdPID, err := kc.GetKMDPID()
-	fmt.Printf("get kmd pid took %v\n", time.Since(start))
+	fmt.Printf("get kmd pid took %v, err: %v, kmdPID: %v\n", time.Since(start), err, kmdPID)
 	if err == nil {
 		start = time.Now()
 		// Kill kmd by PID
 		killed, killErr := killPID(int(kmdPID))
 		fmt.Printf("kill pid took %v\n", time.Since(start))
 		if killErr != nil {
+			fmt.Printf("kill err %v\n", killErr)
 			return false, killErr
 		}
 		// if we ended up killing the process, make sure to delete the pid file to avoid
