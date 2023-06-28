@@ -173,7 +173,7 @@ function start_new_private_network() {
   fi
   sed -i "s/NUM_ROUNDS/${NUM_ROUNDS:-30000}/" "/node/run/$TEMPLATE"
   goal network create --noclean -n dockernet -r "${ALGORAND_DATA}/.." -t "/node/run/$TEMPLATE"
-  configure_data_dir
+#  configure_data_dir
   start_private_network
 }
 
