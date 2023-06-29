@@ -116,7 +116,7 @@ function configure_data_dir() {
 
 function start_kmd() {
   if [ "$START_KMD" = "1" ]; then
-    exec runuser -u algorand -c 'goal kmd start -d "$ALGORAND_DATA"'
+    exec runuser -u algorand -- goal kmd start -d "$ALGORAND_DATA"
   fi
 }
 
