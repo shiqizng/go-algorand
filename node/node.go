@@ -19,6 +19,7 @@ package node
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"math"
@@ -55,6 +56,8 @@ import (
 	"github.com/algorand/go-algorand/util/metrics"
 	"github.com/algorand/go-algorand/util/timers"
 	"github.com/algorand/go-deadlock"
+	libp2p_crypto "github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 const (
@@ -152,6 +155,7 @@ type AlgorandFullNode struct {
 	tracer messagetracer.MessageTracer
 
 	stateProofWorker *stateproof.Worker
+	peerID           peer.ID
 }
 
 // TxnWithStatus represents information about a single transaction,
@@ -183,6 +187,20 @@ func MakeFull(log logging.Logger, rootDir string, cfg config.Local, phonebookAdd
 	node.genesisHash = genesis.Hash()
 	node.devMode = genesis.DevMode
 	node.config = cfg
+
+	if cfg.EnableP2P {
+		privKey, _, err := libp2p_crypto.GenerateEd25519Key(rand.Reader)
+		if err != nil {
+			log.Errorf("could not generate a private key for peer: %v", err)
+			return nil, err
+		}
+
+		node.peerID, err = peer.IDFromPrivateKey(privKey)
+		if err != nil {
+			log.Errorf("could not generate a peerID: %v", err)
+			return nil, err
+		}
+	}
 
 	// tie network, block fetcher, and agreement services together
 	p2pNode, err := network.NewWebsocketNetwork(node.log, node.config, phonebookAddresses, genesis.ID(), genesis.Network, node)

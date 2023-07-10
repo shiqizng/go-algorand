@@ -520,6 +520,9 @@ type Local struct {
 	// BlockServiceMemCap is the memory capacity in bytes which is allowed for the block service to use for HTTP block requests.
 	// When it exceeds this capacity, it redirects the block requests to a different node
 	BlockServiceMemCap uint64 `version[28]:"500000000"`
+
+	// EnableP2P enables using libp2p
+	EnableP2P bool `version[28]:"false"`
 }
 
 // DNSBootstrapArray returns an array of one or more DNS Bootstrap identifiers
