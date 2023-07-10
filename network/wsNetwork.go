@@ -36,6 +36,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/algorand/go-algorand/network/peerstore"
 	"github.com/algorand/go-deadlock"
 	"github.com/algorand/websocket"
 	"github.com/gorilla/mux"
@@ -474,6 +475,8 @@ type WebsocketNetwork struct {
 
 	// resolveSRVRecords is a function that resolves SRV records for a given service, protocol and name
 	resolveSRVRecords func(service string, protocol string, name string, fallbackDNSResolverAddress string, secure bool) (addrs []string, err error)
+
+	peerstore peerstore.Peerstore
 }
 
 const (
@@ -983,6 +986,7 @@ func (wn *WebsocketNetwork) Stop() {
 	wn.messagesOfInterestEncoded = false
 	wn.messagesOfInterestEnc = nil
 	wn.messagesOfInterest = nil
+	wn.peerstore.Close()
 }
 
 // RegisterHandlers registers the set of given message handlers.
@@ -2458,6 +2462,26 @@ func NewWebsocketNetwork(log logging.Logger, config config.Local, phonebookAddre
 		NetworkID:         networkID,
 		nodeInfo:          nodeInfo,
 		resolveSRVRecords: tools_network.ReadFromSRV,
+	}
+
+	wn.setup()
+	return wn, nil
+}
+
+// NewWebsocketNetwork constructor for websockets based gossip network
+func NewWebsocketNetworkUsingPeerStore(log logging.Logger, config config.Local, genesisID string, networkID protocol.NetworkID, nodeInfo NodeInfo) (wn *WebsocketNetwork, err error) {
+	//phonebook := MakePhonebook(config.ConnectionsRateLimitingCount,
+	//	time.Duration(config.ConnectionsRateLimitingWindowSeconds)*time.Second)
+	//phonebook.ReplacePeerList(phonebookAddresses, string(networkID), PhoneBookEntryRelayRole)
+	ps, _ := peerstore.NewPeerStore()
+	wn = &WebsocketNetwork{
+		log:               log,
+		config:            config,
+		GenesisID:         genesisID,
+		NetworkID:         networkID,
+		nodeInfo:          nodeInfo,
+		resolveSRVRecords: tools_network.ReadFromSRV,
+		peerstore:         ps,
 	}
 
 	wn.setup()

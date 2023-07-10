@@ -20,7 +20,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/algorand/go-algorand/node"
+	"github.com/algorand/go-algorand/network"
 	ds "github.com/ipfs/go-datastore"
 	leveldb "github.com/ipfs/go-ds-leveldb"
 	libp2p "github.com/libp2p/go-libp2p/core/peerstore"
@@ -52,7 +52,15 @@ func NewPeerStore() (Peerstore, error) {
 	}, nil
 }
 
-func (ps Peerstore) AddNodeData(node *node.AlgorandFullNode) (string, error) {
+func (ps Peerstore) AddPeer(peer *network.Peer) (string, error) {
+	return "", nil
+}
+
+func (ps Peerstore) RemovePeer(peer *network.Peer) (string, error) {
+	return "", nil
+}
+
+func (ps Peerstore) GetPeer(peer *network.Peer) (string, error) {
 	return "", nil
 }
 

@@ -188,7 +188,10 @@ func MakeFull(log logging.Logger, rootDir string, cfg config.Local, phonebookAdd
 	node.devMode = genesis.DevMode
 	node.config = cfg
 
+	var p2pNode *network.WebsocketNetwork
+	var err error
 	if cfg.EnableP2P {
+		// ephemeral key for peer ID
 		privKey, _, err := libp2p_crypto.GenerateEd25519Key(rand.Reader)
 		if err != nil {
 			log.Errorf("could not generate a private key for peer: %v", err)
@@ -200,10 +203,16 @@ func MakeFull(log logging.Logger, rootDir string, cfg config.Local, phonebookAdd
 			log.Errorf("could not generate a peerID: %v", err)
 			return nil, err
 		}
+		// peer store
+		//	use peerstore
+		p2pNode, err = network.NewWebsocketNetworkUsingPeerStore(node.log, node.config, genesis.ID(), genesis.Network, node)
+
+	} else {
+		// tie network, block fetcher, and agreement services together
+		p2pNode, err = network.NewWebsocketNetwork(node.log, node.config, phonebookAddresses, genesis.ID(), genesis.Network, node)
+
 	}
 
-	// tie network, block fetcher, and agreement services together
-	p2pNode, err := network.NewWebsocketNetwork(node.log, node.config, phonebookAddresses, genesis.ID(), genesis.Network, node)
 	if err != nil {
 		log.Errorf("could not create websocket node: %v", err)
 		return nil, err
