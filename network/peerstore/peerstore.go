@@ -53,7 +53,7 @@ func dbStore(t, path string) ds.Batching {
 	return store
 }
 
-func NewPeerStore(storeType string, path string) (libp2p.Peerstore, error) {
+func NewPeerStore(context context.Context, storeType string, path string) (libp2p.Peerstore, error) {
 	datastore := dbStore(storeType, path)
-	return pstoreds.NewPeerstore(context.Background(), datastore, pstoreds.DefaultOpts())
+	return pstoreds.NewPeerstore(context, datastore, pstoreds.DefaultOpts())
 }

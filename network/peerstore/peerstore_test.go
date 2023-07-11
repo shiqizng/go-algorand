@@ -1,6 +1,7 @@
 package peerstore
 
 import (
+	"context"
 	"crypto/rand"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestPeerstoreKV(t *testing.T) {
-	ps, err := NewPeerStore("kv", "")
+	ps, err := NewPeerStore(context.Background(), "kv", "")
 	defer ps.Close()
 	require.NoError(t, err)
 
@@ -62,7 +63,7 @@ func TestPeerstoreKV(t *testing.T) {
 
 func TestPeerstoreSQLite(t *testing.T) {
 	dir := t.TempDir()
-	ps, err := NewPeerStore("sqlite", dir)
+	ps, err := NewPeerStore(context.Background(), "sqlite", dir)
 	defer ps.Close()
 	require.NoError(t, err)
 
