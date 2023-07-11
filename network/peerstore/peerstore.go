@@ -19,52 +19,41 @@ package peerstore
 import (
 	"context"
 	"log"
+	"path/filepath"
 
-	"github.com/algorand/go-algorand/network"
 	ds "github.com/ipfs/go-datastore"
 	leveldb "github.com/ipfs/go-ds-leveldb"
+	sqliteds "github.com/ipfs/go-ds-sql/sqlite"
 	libp2p "github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func leveldbStore() (ds.Batching, func()) {
-	store, err := leveldb.NewDatastore("", nil)
-	if err != nil {
-		log.Fatal(err)
+func dbStore(t, path string) ds.Batching {
+	var store ds.Batching
+	var err error
+	switch t {
+	case "kv":
+		// empty path creates an in-memory datastore. set path to a directory to persist
+		store, err = leveldb.NewDatastore(path, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "sqlite":
+		opts := &sqliteds.Options{
+			DSN: filepath.Join(path, "peerstore.sqlite"),
+		}
+		store, err = opts.Create()
+		if err != nil {
+			log.Fatal(err)
+		}
+	default:
+		log.Fatal("unknown datastore type")
 	}
-	closer := func() {
-		store.Close()
-	}
-	return store, closer
+	return store
 }
 
-type Peerstore struct {
-	ps libp2p.Peerstore
-	ds ds.Batching
-}
-
-func NewPeerStore() (Peerstore, error) {
-	datastore, _ := leveldbStore()
-	peerstore, _ := pstoreds.NewPeerstore(context.Background(), datastore, pstoreds.DefaultOpts())
-	return Peerstore{
-		ps: peerstore,
-		ds: datastore,
-	}, nil
-}
-
-func (ps Peerstore) AddPeer(peer *network.Peer) (string, error) {
-	return "", nil
-}
-
-func (ps Peerstore) RemovePeer(peer *network.Peer) (string, error) {
-	return "", nil
-}
-
-func (ps Peerstore) GetPeer(peer *network.Peer) (string, error) {
-	return "", nil
-}
-
-func (ps Peerstore) Close() {
-	ps.ds.Close()
-	ps.ps.Close()
+func NewPeerStore(storeType string, path string) (libp2p.Peerstore, error) {
+	datastore := dbStore(storeType, path)
+	return pstoreds.NewPeerstore(context.Background(), datastore, pstoreds.DefaultOpts())
 }
