@@ -20,12 +20,16 @@ import (
 	"context"
 	"log"
 	"path/filepath"
+	"time"
 
 	ds "github.com/ipfs/go-datastore"
 	leveldb "github.com/ipfs/go-ds-leveldb"
 	sqliteds "github.com/ipfs/go-ds-sql/sqlite"
+	"github.com/libp2p/go-libp2p/core/peer"
 	libp2p "github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/libp2p/go-libp2p/core/record"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
+	// sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -53,7 +57,33 @@ func dbStore(t, path string) ds.Batching {
 	return store
 }
 
-func NewPeerStore(context context.Context, storeType string, path string) (libp2p.Peerstore, error) {
+// NewPeerStore creates a new peerstore backed by a datastore.
+func NewPeerStore(ctx context.Context, storeType string, path string) (libp2p.Peerstore, error) {
 	datastore := dbStore(storeType, path)
-	return pstoreds.NewPeerstore(context, datastore, pstoreds.DefaultOpts())
+	return pstoreds.NewPeerstore(ctx, datastore, pstoreds.DefaultOpts())
+}
+
+// AddrBook implements libp2p.AddrBook.
+type AddrBook struct {
+	libp2p.AddrBook
+	libp2p.CertifiedAddrBook
+}
+
+// CertAddrBook implements libp2p.CertifiedAddrBook.
+type CertAddrBook struct {
+	Records map[peer.ID]*record.Envelope
+}
+
+// ConsumePeerRecord implements libp2p.CertifiedAddrBook.
+func (cab CertAddrBook) ConsumePeerRecord(s *record.Envelope, ttl time.Duration) (accepted bool, err error) {
+	rec, _ := s.Record()
+	prec := rec.(*peer.PeerRecord)
+	cab.Records[prec.PeerID] = s
+	return true, nil
+}
+
+// GetPeerRecord implements libp2p.CertifiedAddrBook.
+func (cab CertAddrBook) GetPeerRecord(p peer.ID) *record.Envelope {
+	return cab.Records[p]
+	return nil
 }

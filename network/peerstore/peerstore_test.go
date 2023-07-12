@@ -8,7 +8,11 @@ import (
 
 	libp2p_crypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
+	libp2p "github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/libp2p/go-libp2p/core/record"
+	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -106,4 +110,48 @@ func TestPeerstoreSQLite(t *testing.T) {
 	ps.ClearAddrs(peerID)
 	peers = ps.PeersWithAddrs()
 	require.Equal(t, 1, len(peers))
+}
+
+func TestCertifiedAddrBook(t *testing.T) {
+	records := make(map[peer.ID]*record.Envelope)
+	cb := CertAddrBook{Records: records}
+	dir := t.TempDir()
+	db := dbStore("kv", dir)
+	addrBook, err := pstoreds.NewAddrBook(context.Background(), db, pstoreds.DefaultOpts())
+	require.NoError(t, err)
+	ab := AddrBook{
+		CertifiedAddrBook: cb,
+		AddrBook:          addrBook,
+	}
+	// check ab is type libp2p.AddrBook
+	var _ libp2p.AddrBook = (*AddrBook)(nil)
+	// check ab is type libp2p.CertifiedAddrBook
+	_, ok := libp2p.GetCertifiedAddrBook(&ab)
+	assert.True(t, ok)
+
+	// create a signed record
+	privKey, _, err := libp2p_crypto.GenerateEd25519Key(rand.Reader)
+	require.NoError(t, err)
+	peerID, err := peer.IDFromPrivateKey(privKey)
+	require.NoError(t, err)
+
+	addr := ma.StringCast("/ip4/1.2.3.4/tcp/1234")
+	rec := peer.NewPeerRecord()
+	rec.PeerID = peerID
+	rec.Addrs = []ma.Multiaddr{addr}
+	signed, err := record.Seal(rec, privKey)
+	if err != nil {
+		t.Fatalf("error generating peer record: %s", err)
+	}
+
+	accepted, err := ab.CertifiedAddrBook.ConsumePeerRecord(signed, time.Second)
+	require.True(t, accepted)
+	require.NoError(t, err)
+
+	// get sealed record
+	env := ab.CertifiedAddrBook.GetPeerRecord(peerID)
+	envrec, _ := env.Record()
+	peerRec := envrec.(*peer.PeerRecord)
+	require.NotNil(t, peerRec)
+	require.Equal(t, peerID, peerRec.PeerID)
 }
