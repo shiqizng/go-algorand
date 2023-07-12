@@ -87,3 +87,35 @@ func (cab CertAddrBook) GetPeerRecord(p peer.ID) *record.Envelope {
 	return cab.Records[p]
 	return nil
 }
+
+type Metrics struct {
+	libp2p.Metrics
+	PeersCounter map[peer.ID]int
+}
+
+func (m Metrics) RecordCount(p peer.ID) int {
+	m.PeersCounter[p]++
+	return m.PeersCounter[p]
+}
+
+type AlgoPeerStore struct {
+	libp2p.Peerstore
+	AddrBook
+	Metrics
+}
+
+func NewAlgoPeerstore(ctx context.Context, storeType string, path string) (AlgoPeerStore, error) {
+	datastore := dbStore(storeType, path)
+	store, err := pstoreds.NewPeerstore(ctx, datastore, pstoreds.DefaultOpts())
+	m := Metrics{store.Metrics, make(map[peer.ID]int)}
+	records := make(map[peer.ID]*record.Envelope)
+	cb := CertAddrBook{Records: records}
+	db := dbStore("kv", "")
+	addrBook, err := pstoreds.NewAddrBook(context.Background(), db, pstoreds.DefaultOpts())
+	ab := AddrBook{
+		CertifiedAddrBook: cb,
+		AddrBook:          addrBook,
+	}
+	aps := AlgoPeerStore{store, ab, m}
+	return aps, err
+}

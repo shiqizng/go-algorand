@@ -155,3 +155,47 @@ func TestCertifiedAddrBook(t *testing.T) {
 	require.NotNil(t, peerRec)
 	require.Equal(t, peerID, peerRec.PeerID)
 }
+
+func TestAlgoPeerStore(t *testing.T) {
+	dir := t.TempDir()
+	ps, err := NewAlgoPeerstore(context.Background(), "kv", dir)
+	defer ps.Close()
+	require.NoError(t, err)
+
+	// add kv pair
+	ps.Put("0", "foo", "bar")
+	v, err := ps.Get("0", "foo")
+	require.NoError(t, err)
+	require.Equal(t, "bar", v)
+
+	// peer ID
+	privKey, _, err := libp2p_crypto.GenerateEd25519Key(rand.Reader)
+	require.NoError(t, err)
+	peerID, err := peer.IDFromPrivateKey(privKey)
+	require.NoError(t, err)
+
+	ps.RecordCount(peerID)
+	cnt := ps.RecordCount(peerID)
+	require.Equal(t, 2, cnt)
+
+	addr := ma.StringCast("/ip4/1.2.3.4/tcp/1234")
+	rec := peer.NewPeerRecord()
+	rec.PeerID = peerID
+	rec.Addrs = []ma.Multiaddr{addr}
+	signed, err := record.Seal(rec, privKey)
+	if err != nil {
+		t.Fatalf("error generating peer record: %s", err)
+	}
+
+	accepted, err := ps.CertifiedAddrBook.ConsumePeerRecord(signed, time.Second)
+	require.True(t, accepted)
+	require.NoError(t, err)
+
+	// get sealed record
+	env := ps.CertifiedAddrBook.GetPeerRecord(peerID)
+	envrec, _ := env.Record()
+	peerRec := envrec.(*peer.PeerRecord)
+	require.NotNil(t, peerRec)
+	require.Equal(t, peerID, peerRec.PeerID)
+
+}
