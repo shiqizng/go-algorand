@@ -187,6 +187,10 @@ func TestAlgoPeerStore(t *testing.T) {
 		t.Fatalf("error generating peer record: %s", err)
 	}
 
+	// check ab is type libp2p.CertifiedAddrBook
+	_, ok := libp2p.GetCertifiedAddrBook(&ps.AddrBook)
+	assert.True(t, ok)
+
 	accepted, err := ps.CertifiedAddrBook.ConsumePeerRecord(signed, time.Second)
 	require.True(t, accepted)
 	require.NoError(t, err)
