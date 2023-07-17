@@ -157,8 +157,7 @@ func TestCertifiedAddrBook(t *testing.T) {
 }
 
 func TestAlgoPeerStore(t *testing.T) {
-	dir := t.TempDir()
-	ps, err := NewAlgoPeerstore(context.Background(), "kv", dir)
+	ps, err := NewAlgoPeerstore(context.Background(), "kv", "")
 	defer ps.Close()
 	require.NoError(t, err)
 
@@ -201,5 +200,4 @@ func TestAlgoPeerStore(t *testing.T) {
 	peerRec := envrec.(*peer.PeerRecord)
 	require.NotNil(t, peerRec)
 	require.Equal(t, peerID, peerRec.PeerID)
-
 }

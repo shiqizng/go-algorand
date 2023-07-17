@@ -63,7 +63,7 @@ func NewPeerStore(ctx context.Context, storeType string, path string) (libp2p.Pe
 	return pstoreds.NewPeerstore(ctx, datastore, pstoreds.DefaultOpts())
 }
 
-// AddrBook implements libp2p.AddrBook.
+// AddrBook implements libp2p.AddrBook.; pstoreds.addr_book also implements a certifiedAddrBook
 type AddrBook struct {
 	libp2p.AddrBook
 	libp2p.CertifiedAddrBook
@@ -110,7 +110,7 @@ func NewAlgoPeerstore(ctx context.Context, storeType string, path string) (AlgoP
 	m := Metrics{store.Metrics, make(map[peer.ID]int)}
 	records := make(map[peer.ID]*record.Envelope)
 	cb := CertAddrBook{Records: records}
-	db := dbStore("kv", "")
+	db := dbStore(storeType, path)
 	addrBook, err := pstoreds.NewAddrBook(context.Background(), db, pstoreds.DefaultOpts())
 	ab := AddrBook{
 		CertifiedAddrBook: cb,
